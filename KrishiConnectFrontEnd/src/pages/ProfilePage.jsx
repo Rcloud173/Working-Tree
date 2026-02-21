@@ -550,20 +550,22 @@ const ProfilePage = () => {
           </button>
         </div>
 
-        {/* Impact Stats */}
+        {/* Impact Stats (from MongoDB: profileViewers, postImpressions, savedCount) */}
         {user.isOwnProfile && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mt-4 mx-4 sm:mx-0 p-5">
             <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"><TrendingUp size={15} className="text-green-600" /> Your Impact This Week</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Profile Views', value: user.profileViewers, change: '+12%', up: true },
-                { label: 'Post Impressions', value: user.postImpressions, change: '+8%', up: true },
-                { label: 'Saved Posts', value: user.savedCount, change: '+3', up: true },
-              ].map(({ label, value, change, up }) => (
+                { label: 'Profile Views', value: user.profileViewers ?? 0, change: user.profileViewersChange ?? null },
+                { label: 'Post Impressions', value: user.postImpressions ?? 0, change: user.postImpressionsChange ?? null },
+                { label: 'Saved Posts', value: user.savedCount ?? 0, change: user.savedCountChange ?? null },
+              ].map(({ label, value, change }) => (
                 <div key={label} className="text-center p-3 bg-green-50 rounded-xl border border-green-100">
-                  <p className="text-xl font-black text-green-700">{value}</p>
+                  <p className="text-xl font-black text-green-700">{formatNumber(value)}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-                  <p className={`text-xs font-bold mt-1 ${up ? 'text-green-600' : 'text-red-500'}`}>{change}</p>
+                  <p className={`text-xs font-bold mt-1 ${change != null && String(change).startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
+                    {change != null ? (typeof change === 'number' ? (change >= 0 ? `+${change}` : String(change)) : change) : '—'}
+                  </p>
                 </div>
               ))}
             </div>

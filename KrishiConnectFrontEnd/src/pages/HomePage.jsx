@@ -11,6 +11,7 @@ import {
 import { postService } from '../services/post.service';
 import { userService } from '../services/user.service';
 import { authStore } from '../store/authStore';
+import AIChatPanel from '../components/AIChatPanel';
 import { useTranslatePost } from '../hooks/useTranslatePost';
 
 // ============================================================================
@@ -272,6 +273,11 @@ const GlobalStyles = () => (
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow-sm);
     }
+    .dark .card {
+      background: rgb(31 41 55);
+      border-color: rgb(55 65 80);
+      box-shadow: none;
+    }
 
     /* Sidebar item */
     .sidebar-item { transition: background 0.15s ease, color 0.15s ease; }
@@ -297,6 +303,7 @@ const GlobalStyles = () => (
     /* Stat item hover */
     .stat-hover { transition: background 0.12s ease; }
     .stat-hover:hover { background: white; border-radius: 10px; }
+    .dark .stat-hover:hover { background: rgb(55 65 80); }
 
     /* Action button */
     .action-btn { transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease; }
@@ -311,6 +318,9 @@ const GlobalStyles = () => (
     .weather-gradient {
       background: linear-gradient(135deg, #e0f7fa 0%, #f0fdf4 50%, #ecfdf5 100%);
     }
+    .dark .weather-gradient {
+      background: linear-gradient(135deg, rgb(30 58 138 / 0.3) 0%, rgb(22 101 52 / 0.25) 50%, rgb(6 95 70 / 0.3) 100%);
+    }
 
     /* Composer bar prompt */
     .composer-prompt {
@@ -319,6 +329,9 @@ const GlobalStyles = () => (
     .composer-prompt:hover {
       background: #f0fdf4;
       box-shadow: inset 0 0 0 1.5px var(--green-300);
+    }
+    .dark .composer-prompt:hover {
+      background: rgb(22 101 52 / 0.2);
     }
 
     /* Profile cover overlay */
@@ -1031,12 +1044,10 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
           />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <button onClick={() => navigate(`/profile/${post.author._id}`)} className="btn" style={{
-                fontWeight: 700, color: '#0f172a', fontSize: 14, background: 'none',
-                padding: 0, transition: 'color 0.15s ease',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-                onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}
+              <button
+                type="button"
+                onClick={() => navigate(`/profile/${post.author._id}`)}
+                className="btn font-bold text-gray-900 dark:text-gray-100 text-sm bg-transparent p-0 transition-colors hover:text-green-600 dark:hover:text-green-400"
               >
                 {post.author.name}
               </button>
@@ -1526,35 +1537,31 @@ const CompactProfileCard = ({ user, onEditProfile }) => {
 // POST COMPOSER BAR
 // ============================================================================
 const PostComposerBar = ({ user, onOpenModal }) => (
-  <div className="card" style={{ padding: '16px 18px', marginBottom: 12 }}>
-    <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-      <img src={user?.avatar} alt={user?.name} style={{
-        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-        border: '2px solid #dcfce7', flexShrink: 0,
-      }} />
-      <button onClick={onOpenModal} className="btn composer-prompt" style={{
-        flex: 1, background: '#f8fafc', borderRadius: 99,
-        padding: '0 18px', textAlign: 'left', fontSize: 13,
-        color: '#94a3b8', fontWeight: 500, fontFamily: 'Plus Jakarta Sans, sans-serif',
-        border: '1.5px solid #e8edf2', height: 42,
-      }}>
+  <div className="card p-4 mb-3 transition-colors duration-200">
+    <div className="flex gap-3 mb-3">
+      <img
+        src={user?.avatar}
+        alt={user?.name}
+        className="w-10 h-10 rounded-full object-cover border-2 border-green-200 dark:border-green-800 flex-shrink-0"
+      />
+      <button
+        type="button"
+        onClick={onOpenModal}
+        className="btn composer-prompt flex-1 rounded-full px-4 text-left text-[13px] text-gray-500 dark:text-gray-400 font-medium h-10 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+        style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+      >
         Share something with farmers...
       </button>
     </div>
-    <div style={{
-      display: 'flex', gap: 2, paddingTop: 10,
-      borderTop: '1px solid #f1f5f9',
-    }}>
+    <div className="flex gap-0.5 pt-2.5 border-t border-gray-100 dark:border-gray-700">
       {[{ icon: '📹', label: 'Video' }, { icon: '📷', label: 'Photo' }, { icon: '✍️', label: 'Article' }].map(({ icon, label }) => (
-        <button key={label} onClick={onOpenModal} className="btn" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-          flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 12, fontWeight: 600,
-          color: '#64748b', background: 'none', transition: 'all 0.15s ease',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.color = '#16a34a'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#64748b'; }}
+        <button
+          key={label}
+          type="button"
+          onClick={onOpenModal}
+          className="btn flex items-center justify-center gap-2 flex-1 py-2 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 transition-colors"
         >
-          <span style={{ fontSize: 15 }}>{icon}</span>
+          <span className="text-[15px]">{icon}</span>
           <span>{label}</span>
         </button>
       ))}
@@ -1610,11 +1617,11 @@ const RightSidebar = () => {
         className="card weather-gradient"
         style={{ padding: '18px 18px', cursor: 'pointer' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <h3 style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ fontSize: 16 }}>🌤️</span> Today's Weather
+        <div className="flex items-center justify-between mb-3.5">
+          <h3 className="font-bold text-[13px] text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <span className="text-base">🌤️</span> Today's Weather
           </h3>
-          <span style={{ fontSize: 10, color: '#64748b', background: 'white', padding: '3px 8px', borderRadius: 99, fontWeight: 600, border: '1px solid #e2e8f0' }}>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full font-semibold border border-gray-200 dark:border-gray-600">
             Live
           </span>
         </div>
@@ -1622,40 +1629,32 @@ const RightSidebar = () => {
         {loading ? <CardSkeleton /> : weather ? (
           <>
             {/* Main temp block */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              background: 'white', borderRadius: 14, padding: '14px 16px', marginBottom: 10,
-              boxShadow: '0 2px 8px rgb(0 0 0 / 0.05)',
-            }}>
-              <span style={{ fontSize: 44, lineHeight: 1 }}>{weather.icon}</span>
+            <div className="flex items-center gap-3.5 bg-white dark:bg-gray-700/50 rounded-xl p-3.5 mb-2.5 shadow-sm">
+              <span className="text-4xl leading-none">{weather.icon}</span>
               <div>
-                <p style={{ fontSize: 30, fontWeight: 800, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                  {weather.temp}°<span style={{ fontSize: 16, fontWeight: 500, color: '#64748b' }}>C</span>
+                <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 leading-none tracking-tight">
+                  {weather.temp}°<span className="text-base font-medium text-gray-500 dark:text-gray-400">C</span>
                 </p>
-                <p style={{ fontSize: 13, color: '#475569', marginTop: 3, fontWeight: 500 }}>{weather.condition}</p>
-                <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-1 font-medium">{weather.condition}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
                   <MapPin size={10} /> {weather.city}
                 </p>
               </div>
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+            <div className="grid grid-cols-2 gap-2 mb-2.5">
               {[
-                { icon: Droplet, label: 'Humidity', value: `${weather.humidity}%`, iconBg: '#dbeafe', iconColor: '#2563eb' },
-                { icon: Wind, label: 'Wind', value: `${weather.wind} km/h`, iconBg: '#fed7aa', iconColor: '#ea580c' },
+                { icon: Droplet, label: 'Humidity', value: `${weather.humidity}%`, iconBg: 'bg-blue-100 dark:bg-blue-900/40', iconColor: 'text-blue-600 dark:text-blue-400' },
+                { icon: Wind, label: 'Wind', value: `${weather.wind} km/h`, iconBg: 'bg-orange-100 dark:bg-orange-900/40', iconColor: 'text-orange-600 dark:text-orange-400' },
               ].map(({ icon: Icon, label, value, iconBg, iconColor }) => (
-                <div key={label} style={{
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  background: 'white', padding: '10px 12px', borderRadius: 12,
-                  boxShadow: '0 1px 4px rgb(0 0 0 / 0.04)',
-                }}>
-                  <div style={{ padding: 7, background: iconBg, borderRadius: 9 }}>
-                    <Icon size={13} style={{ color: iconColor }} />
+                <div key={label} className="flex items-center gap-2 bg-white dark:bg-gray-700/50 py-2.5 px-3 rounded-xl shadow-sm">
+                  <div className={`p-1.5 rounded-lg ${iconBg}`}>
+                    <Icon size={13} className={iconColor} />
                   </div>
                   <div>
-                    <p style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>{label}</p>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginTop: 1 }}>{value}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+                    <p className="text-[13px] font-bold text-gray-900 dark:text-gray-100 mt-0.5">{value}</p>
                   </div>
                 </div>
               ))}
@@ -1679,19 +1678,16 @@ const RightSidebar = () => {
         className="card"
         style={{ padding: '18px 18px', cursor: 'pointer' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h3 style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 7 }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-[13px] text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <span>📈</span> Mandi Prices
           </h3>
-          <button onClick={refreshPrices} className="btn" style={{
-            padding: 6, borderRadius: 8, color: '#64748b',
-            background: pricesRefreshing ? '#f0fdf4' : 'none',
-            display: 'flex', alignItems: 'center', transition: 'all 0.15s ease',
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-            onMouseLeave={e => { if (!pricesRefreshing) e.currentTarget.style.background = 'none'; }}
+          <button
+            type="button"
+            onClick={refreshPrices}
+            className={`btn p-1.5 rounded-lg flex items-center transition-colors ${pricesRefreshing ? 'bg-green-50 dark:bg-green-900/20 text-green-600' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
           >
-            <RefreshCw size={13} style={{ animation: pricesRefreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+            <RefreshCw size={13} className={pricesRefreshing ? 'animate-spin' : ''} />
           </button>
         </div>
 
@@ -1702,21 +1698,16 @@ const RightSidebar = () => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {prices.map((item, idx) => (
-              <div key={item.crop} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '9px 10px', borderRadius: 11, cursor: 'pointer',
-                transition: 'background 0.12s ease',
-                borderBottom: idx < prices.length - 1 ? '1px solid #f8fafc' : 'none',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              <div
+                key={item.crop}
+                className="flex items-center justify-between py-2 px-2.5 rounded-xl cursor-pointer transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30"
               >
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{item.crop}</p>
-                  <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>{item.unit}</p>
+                  <p className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">{item.crop}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{item.unit}</p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                <div className="text-right">
+                  <p className="text-[13px] font-bold text-gray-900 dark:text-gray-100">
                     ₹{item.price.toLocaleString()}
                   </p>
                   <span className={item.trend === 'up' ? 'trend-up' : 'trend-down'} style={{
@@ -1730,14 +1721,14 @@ const RightSidebar = () => {
             ))}
           </div>
         )}
-        <p style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', marginTop: 10, fontWeight: 500 }}>
+        <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-2.5 font-medium">
           Auto-updates every 5 min
         </p>
       </div>
 
       {/* ── Agri News ── */}
-      <div className="card" style={{ padding: '18px 18px' }}>
-        <h3 style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+      <div className="card p-4">
+        <h3 className="font-bold text-[13px] text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
           <span>🌾</span> Agri News
         </h3>
         {loading ? (
@@ -1749,47 +1740,35 @@ const RightSidebar = () => {
             {displayedNews.map(item => {
               const cat = categoryColors[item.category] || { bg: '#f1f5f9', color: '#475569' };
               return (
-                <a key={item._id} href={item.url} target="_blank" rel="noreferrer" style={{
-                  display: 'block', padding: '10px 10px', borderRadius: 12,
-                  textDecoration: 'none', transition: 'background 0.12s ease',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <p className="line-clamp-2" style={{
-                    fontSize: 12, fontWeight: 600, color: '#1e293b',
-                    lineHeight: 1.5, marginBottom: 6,
-                    transition: 'color 0.15s ease',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#1e293b'}
-                  >
+                <a
+                key={item._id}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block py-2.5 px-2.5 rounded-xl no-underline transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              >
+                  <p className="line-clamp-2 text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug mb-1.5 hover:text-green-600 dark:hover:text-green-400 transition-colors">
                     {item.title}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
-                      background: cat.bg, color: cat.color,
-                    }}>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-[10px] font-bold py-0.5 px-2 rounded-full"
+                      style={{ background: cat.bg, color: cat.color }}
+                    >
                       {item.category}
                     </span>
-                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{formatTimeAgo(item.publishedAt)}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatTimeAgo(item.publishedAt)}</span>
                   </div>
                 </a>
               );
             })}
-            <button onClick={() => setShowAllNews(!showAllNews)} className="btn" style={{
-              width: '100%', color: '#16a34a', fontSize: 12, fontWeight: 600,
-              padding: '9px 0', background: 'none', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', gap: 5,
-              borderTop: '1px solid #f1f5f9', marginTop: 6,
-              transition: 'background 0.12s ease', borderRadius: 10,
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            <button
+              type="button"
+              onClick={() => setShowAllNews(!showAllNews)}
+              className="btn w-full text-green-600 dark:text-green-400 text-xs font-semibold py-2 bg-transparent flex items-center justify-center gap-1.5 border-t border-gray-100 dark:border-gray-700 mt-1.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
             >
               {showAllNews ? 'Show less' : 'Show more'}
-              <ArrowRight size={12} style={{ transform: showAllNews ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+              <ArrowRight size={12} className={showAllNews ? 'rotate-180' : ''} style={{ transition: 'transform 0.2s ease' }} />
             </button>
           </div>
         )}
@@ -1797,24 +1776,19 @@ const RightSidebar = () => {
 
       {/* ── Trending Tags ── */}
       <div className="card" style={{ padding: '18px 18px' }}>
-        <h3 style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+        <h3 className="font-bold text-[13px] text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
           <span>🔥</span> Trending
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {['#OrganicFarming', '#SustainableAg', '#FarmToTable', '#AgriculturalTech', '#KrishiIndia'].map((tag, i) => (
-            <button key={tag} onClick={() => navigate(`/tag/${tag.slice(1)}`)} className="btn" style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '9px 10px', borderRadius: 11, color: '#15803d',
-              fontWeight: 600, fontSize: 13, background: 'none', textAlign: 'left',
-              transition: 'background 0.12s ease',
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+        <div className="flex flex-col gap-0.5">
+          {['#OrganicFarming', '#SustainableAg', '#FarmToTable', '#AgriculturalTech', '#KrishiIndia'].map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => navigate(`/tag/${tag.slice(1)}`)}
+              className="btn w-full flex items-center justify-between py-2 px-2.5 rounded-xl text-green-700 dark:text-green-400 font-semibold text-[13px] bg-transparent text-left transition-colors hover:bg-green-50 dark:hover:bg-green-900/20"
             >
               <span>{tag}</span>
-              <ArrowRight size={13} style={{ color: '#bbf7d0', transition: 'color 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-              />
+              <ArrowRight size={13} className="text-green-200 dark:text-green-700 group-hover:text-green-600" />
             </button>
           ))}
         </div>
@@ -1848,6 +1822,7 @@ const HomePage = () => {
   const [notificationCount] = useState(5);
   const [toast, setToast] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -1910,10 +1885,8 @@ const HomePage = () => {
     else if (id === 'jobs') navigate('/jobs');
   };
 
-  const mainMargin = sidebarOpen ? 232 : 72;
-
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
       <GlobalStyles />
       {toast && <Toast {...toast} onDismiss={() => setToast(null)} />}
 
@@ -1929,73 +1902,44 @@ const HomePage = () => {
       <div style={{ transition: 'margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1)' }} className="main-content">
 
         {/* ── Top Bar ── */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 30,
-          background: 'rgba(255, 255, 255, 0.92)',
-          backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid #e8edf2',
-          display: 'flex', alignItems: 'center', gap: 14,
-          padding: '0 24px', height: 64,
-          boxShadow: '0 1px 0 rgb(0 0 0 / 0.04)',
-        }} className="topbar-desktop">
+        <div className="sticky top-0 z-30 flex items-center gap-[14px] px-6 h-16 backdrop-blur-[16px] border-b border-gray-200 dark:border-gray-700 bg-white/92 dark:bg-gray-800/92 shadow-[0_1px_0_rgb(0_0_0/0.04)] transition-colors duration-200 topbar-desktop">
           {/* Search */}
-          <div style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
-            <Search size={15} style={{
-              position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-              color: '#94a3b8', pointerEvents: 'none',
-            }} />
-            <input type="search" placeholder="Search farmers, posts, topics..."
-              className="input-base"
-              style={{
-                width: '100%', paddingLeft: 40, paddingRight: 16,
-                paddingTop: 9, paddingBottom: 9,
-                fontSize: 13, background: '#f8fafc',
-                border: '1.5px solid #e8edf2', borderRadius: 99,
-                fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#1e293b',
-              }}
+          <div className="flex-1 max-w-[400px] relative">
+            <Search size={15} className="absolute left-[14px] top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Search farmers, posts, topics..."
+              className="input-base w-full pl-10 pr-4 py-2 text-[13px] bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600 transition-colors"
+              style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+          <div className="flex items-center gap-2.5 ml-auto">
             {/* Notification bell */}
-            <button className="btn" style={{
-              position: 'relative', padding: 9, borderRadius: 11,
-              color: '#64748b', background: 'none', display: 'flex', alignItems: 'center',
-              transition: 'all 0.15s ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#64748b'; }}
+            <button
+              type="button"
+              className="btn relative p-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center"
               onClick={() => handleNavChange('notifications')}
             >
               <Bell size={19} />
               {notificationCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: 5, right: 5,
-                  width: 8, height: 8, background: '#ef4444',
-                  borderRadius: '50%', border: '1.5px solid white',
-                }} />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800" />
               )}
             </button>
 
             {/* Create Post */}
-            <button onClick={() => setShowComposer(true)} className="btn" style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '9px 18px',
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-              color: 'white', borderRadius: 11, fontSize: 13, fontWeight: 700,
-              boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)',
-              transition: 'all 0.15s ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 16px rgb(22 163 74 / 0.4)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px rgb(22 163 74 / 0.3)'; }}
+            <button
+              type="button"
+              onClick={() => setShowComposer(true)}
+              className="btn flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-bold text-white bg-green-600 hover:bg-green-700 shadow-[0_3px_10px_rgb(22_163_74/0.3)] hover:shadow-[0_5px_16px_rgb(22_163_74/0.4)] hover:-translate-y-px transition-all"
             >
               <Plus size={16} /> Create Post
             </button>
           </div>
         </div>
 
-        {/* ── Page content ── */}
-        <div style={{ maxWidth: 1140, margin: '0 ', padding: '24px 20px' }}>
+        {/* ── Page content (centered, wider for less compressed cards) ── */}
+        <div className="max-w-[1320px] mx-auto px-5 py-6">
           {/* <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20, alignItems: 'start' }} className="content-grid"> */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', columnGap: 20, rowGap: 0, alignItems: 'start' }} className="content-grid">
             {/* AI Assistant (left) — guidance & doubt solving; hidden on mobile, shown from 768px */}
@@ -2012,53 +1956,44 @@ const HomePage = () => {
                   </div>
                   {/* Avatar / icon */}
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: -28, marginBottom: 10 }}>
-                    <div style={{
-                      width: 56, height: 56, borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
-                      border: '3px solid white',
-                      boxShadow: '0 4px 14px rgb(0 0 0 / 0.12)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <HelpCircle size={26} style={{ color: '#15803d' }} />
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50 border-[3px] border-white dark:border-gray-800 shadow flex items-center justify-center">
+                      <HelpCircle size={26} className="text-green-700 dark:text-green-400" />
                     </div>
                   </div>
                   {/* Info */}
-                  <div style={{ padding: '0 16px 16px', textAlign: 'center' }}>
-                    <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>Krishi Assistant</p>
-                    <p style={{ fontSize: 12, color: '#64748b', marginTop: 3, lineHeight: 1.45 }}>
+                  <div className="px-4 pb-4 text-center">
+                    <p className="font-bold text-sm text-gray-900 dark:text-gray-100">Krishi Assistant</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">
                       Guidance & doubt solving for farming, crops & weather
                     </p>
                     {/* Quick actions */}
-                    <div style={{
-                      display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6,
-                      marginTop: 14, padding: 10, background: '#f0fdf4', borderRadius: 14,
-                    }}>
+                    <div className="grid grid-cols-2 gap-1.5 mt-3.5 p-2.5 bg-green-50 dark:bg-green-900/20 rounded-xl">
                       {[
                         { label: 'Crops', hint: 'Tips & pests' },
                         { label: 'Weather', hint: 'Forecast' },
                         { label: 'Market', hint: 'Prices' },
                         { label: 'Soil', hint: 'Health' },
                       ].map(({ label, hint }) => (
-                        <div key={label} className="stat-hover" style={{
-                          textAlign: 'center', padding: '8px 4px', cursor: 'pointer',
-                          borderRadius: 10, transition: 'background 0.12s ease',
-                        }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        <div
+                          key={label}
+                          className="stat-hover text-center py-2 px-1 rounded-lg cursor-pointer"
                         >
-                          <p style={{ fontWeight: 700, fontSize: 12, color: '#15803d' }}>{label}</p>
-                          <p style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{hint}</p>
+                          <p className="font-bold text-xs text-green-700 dark:text-green-400">{label}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{hint}</p>
                         </div>
                       ))}
                     </div>
-                    <button className="btn" style={{
-                      width: '100%', marginTop: 12, padding: '10px 0',
-                      background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                      color: 'white', borderRadius: 11, fontSize: 12, fontWeight: 700,
-                      boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)',
-                      transition: 'all 0.15s ease',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}
+                    <button
+                      onClick={() => setShowAIChat(prev => !prev)}
+                      className="btn"
+                      style={{
+                        width: '100%', marginTop: 12, padding: '10px 0',
+                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                        color: 'white', borderRadius: 11, fontSize: 12, fontWeight: 700,
+                        boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)',
+                        transition: 'all 0.15s ease',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      }}
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 16px rgb(22 163 74 / 0.4)'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px rgb(22 163 74 / 0.3)'; }}
                     >
@@ -2066,33 +2001,27 @@ const HomePage = () => {
                     </button>
                   </div>
                 </div>
+                {/* AI Chat expandable panel – same width as card, directly below */}
+                <div
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${showAIChat ? 'max-h-[70vh] opacity-100 mt-0' : 'max-h-0 opacity-0'}`}
+                >
+                  <AIChatPanel onClose={() => setShowAIChat(false)} />
+                </div>
               </div>
             </div>
 
             {/* Feed */}
             <div className="feed-col" style={{ minWidth: 0 }}>
               {/* Mobile header */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'white', borderRadius: 18, border: '1px solid #e8edf2',
-                padding: '14px 18px', marginBottom: 12,
-                boxShadow: '0 1px 4px rgb(0 0 0 / 0.05)',
-              }} className="mobile-header">
-                <span style={{ fontFamily: 'Lora, Georgia, serif', fontSize: 18, fontWeight: 600, color: '#15803d' }}>
+              <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 mb-3 shadow-sm mobile-header transition-colors duration-200">
+                <span className="font-semibold text-lg text-green-700 dark:text-green-400" style={{ fontFamily: 'Lora, Georgia, serif' }}>
                   🌾 KrishiConnect
                 </span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn" style={{
-                    padding: 9, color: '#64748b', background: '#f8fafc',
-                    borderRadius: 10, display: 'flex', alignItems: 'center',
-                    border: '1px solid #e8edf2',
-                  }}>
+                <div className="flex gap-2">
+                  <button type="button" className="btn p-2.5 rounded-xl text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center">
                     <Search size={18} />
                   </button>
-                  <button onClick={() => setShowComposer(true)} className="btn" style={{
-                    padding: 9, background: '#16a34a', color: 'white',
-                    borderRadius: 10, display: 'flex', alignItems: 'center',
-                  }}>
+                  <button type="button" onClick={() => setShowComposer(true)} className="btn p-2.5 bg-green-600 text-white rounded-xl flex items-center">
                     <Plus size={18} />
                   </button>
                 </div>
@@ -2102,28 +2031,26 @@ const HomePage = () => {
               {currentUser && <PostComposerBar user={currentUser} onOpenModal={() => setShowComposer(true)} />}
 
               {/* Feed mode: Recent / Trending */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <div className="flex gap-2 mb-3">
                 <button
+                  type="button"
                   onClick={() => setFeedMode('recent')}
-                  className="btn"
-                  style={{
-                    flex: 1, padding: '10px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600,
-                    background: feedMode === 'recent' ? '#16a34a' : '#f1f5f9',
-                    color: feedMode === 'recent' ? 'white' : '#64748b',
-                    border: feedMode === 'recent' ? 'none' : '1px solid #e2e8f0',
-                  }}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-[13px] font-semibold transition-colors ${
+                    feedMode === 'recent'
+                      ? 'bg-green-600 text-white border-none'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
+                  }`}
                 >
                   Recent
                 </button>
                 <button
+                  type="button"
                   onClick={() => setFeedMode('trending')}
-                  className="btn"
-                  style={{
-                    flex: 1, padding: '10px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600,
-                    background: feedMode === 'trending' ? '#16a34a' : '#f1f5f9',
-                    color: feedMode === 'trending' ? 'white' : '#64748b',
-                    border: feedMode === 'trending' ? 'none' : '1px solid #e2e8f0',
-                  }}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-[13px] font-semibold transition-colors ${
+                    feedMode === 'trending'
+                      ? 'bg-green-600 text-white border-none'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
+                  }`}
                 >
                   Trending
                 </button>
@@ -2134,34 +2061,32 @@ const HomePage = () => {
 
               {/* Error state */}
               {postsError && (
-                <div className="card" style={{ padding: '36px 24px', textAlign: 'center', marginBottom: 12 }}>
-                  <div style={{
-                    width: 56, height: 56, background: '#fee2e2', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 14px',
-                  }}>
-                    <AlertCircle size={26} style={{ color: '#dc2626' }} />
+                <div className="card py-9 px-6 text-center mb-3">
+                  <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <AlertCircle size={26} className="text-red-500" />
                   </div>
-                  <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: 5 }}>{postsError}</p>
-                  <button onClick={() => { setPostsError(null); setRetryCount(c => c + 1); }} className="btn" style={{
-                    marginTop: 10, padding: '10px 24px', background: '#16a34a',
-                    color: 'white', borderRadius: 11, fontSize: 13, fontWeight: 600,
-                  }}>Retry</button>
+                  <p className="font-bold text-gray-900 dark:text-gray-100 mb-1">{postsError}</p>
+                  <button
+                    type="button"
+                    onClick={() => { setPostsError(null); setRetryCount(c => c + 1); }}
+                    className="btn mt-2.5 py-2.5 px-6 bg-green-600 text-white rounded-xl text-[13px] font-semibold"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 
               {/* Empty state */}
               {!postsLoading && !postsError && posts.length === 0 && (
-                <div className="card" style={{ padding: '56px 24px', textAlign: 'center', marginBottom: 12 }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>🌱</div>
-                  <p style={{ fontWeight: 800, fontSize: 17, color: '#0f172a', marginBottom: 6 }}>No posts yet</p>
-                  <p style={{ fontSize: 13, color: '#94a3b8' }}>Follow other farmers or create your first post!</p>
-                  <button onClick={() => setShowComposer(true)} className="btn" style={{
-                    marginTop: 20, padding: '11px 28px',
-                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                    color: 'white', borderRadius: 12, fontSize: 13, fontWeight: 700,
-                    boxShadow: '0 4px 12px rgb(22 163 74 / 0.3)',
-                  }}>
+                <div className="card py-14 px-6 text-center mb-3">
+                  <div className="text-5xl mb-4">🌱</div>
+                  <p className="font-extrabold text-lg text-gray-900 dark:text-gray-100 mb-1.5">No posts yet</p>
+                  <p className="text-[13px] text-gray-500 dark:text-gray-400">Follow other farmers or create your first post!</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowComposer(true)}
+                    className="btn mt-5 py-2.5 px-7 bg-green-600 hover:bg-green-700 text-white rounded-xl text-[13px] font-bold shadow-[0_4px_12px_rgb(22_163_74/0.3)] transition-colors"
+                  >
                     Create First Post
                   </button>
                 </div>
@@ -2179,22 +2104,19 @@ const HomePage = () => {
 
               {/* Load more */}
               {!postsLoading && posts.length > 0 && (
-                <div style={{ textAlign: 'center', paddingBottom: 32, paddingTop: 8 }}>
+                <div className="text-center pb-8 pt-2">
                   {hasMore ? (
-                    <button onClick={handleLoadMore} disabled={loadingMore} className="btn" style={{
-                      padding: '11px 32px', border: '2px solid #16a34a',
-                      color: '#16a34a', borderRadius: 12, fontWeight: 700, fontSize: 13,
-                      background: 'white', display: 'inline-flex', alignItems: 'center', gap: 8,
-                      transition: 'all 0.15s ease', opacity: loadingMore ? 0.6 : 1,
-                    }}
-                      onMouseEnter={e => { if (!loadingMore) { e.currentTarget.style.background = '#f0fdf4'; } }}
-                      onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="btn py-2.5 px-8 border-2 border-green-600 text-green-600 dark:text-green-400 rounded-xl font-bold text-[13px] bg-white dark:bg-gray-800 inline-flex items-center gap-2 transition-all opacity-100 disabled:opacity-60 hover:bg-green-50 dark:hover:bg-green-900/20"
                     >
-                      {loadingMore ? <><Loader size={15} className="spin" /> Loading...</> : 'Load More Posts'}
+                      {loadingMore ? <><Loader size={15} className="animate-spin" /> Loading...</> : 'Load More Posts'}
                     </button>
                   ) : (
-                    <p style={{ fontSize: 13, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-                      <CheckCircle size={15} style={{ color: '#22c55e' }} /> You're all caught up!
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+                      <CheckCircle size={15} className="text-green-500" /> You're all caught up!
                     </p>
                   )}
                 </div>
@@ -2210,16 +2132,7 @@ const HomePage = () => {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'rgba(255, 255, 255, 0.96)',
-        backdropFilter: 'blur(16px)',
-        borderTop: '1px solid #e8edf2',
-        display: 'flex', justifyContent: 'space-around',
-        padding: '6px 8px 8px',
-        boxShadow: '0 -4px 20px rgb(0 0 0 / 0.06)',
-        zIndex: 40,
-      }} className="mobile-nav">
+      <nav className="fixed bottom-0 left-0 right-0 flex justify-around py-2 px-2 pb-3 backdrop-blur-[16px] border-t border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 shadow-[0_-4px_20px_rgb(0_0_0/0.06)] z-40 mobile-nav transition-colors duration-200">
         {[
           { id: 'home', icon: Home, label: 'Home' },
           { id: 'network', icon: Users, label: 'Network' },
@@ -2229,19 +2142,19 @@ const HomePage = () => {
         ].map(item => {
           const isActive = item.id === 'home' ? isHomeActive : (item.id === 'profile' && location.pathname.startsWith('/profile')) || (item.id === 'network' && location.pathname.startsWith('/network')) || (item.id === 'messages' && location.pathname.startsWith('/messages')) || (item.id === 'notifications' && location.pathname.startsWith('/alerts'));
           return (
-            <button key={item.id} onClick={() => handleNavChange(item.id)} className="btn" style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-              padding: '6px 12px', borderRadius: 14, position: 'relative',
-              color: isActive ? '#15803d' : '#94a3b8',
-              background: isActive ? '#f0fdf4' : 'transparent',
-              transition: 'all 0.15s ease',
-              minWidth: 56,
-            }}>
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleNavChange(item.id)}
+              className={`btn flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl relative min-w-[56px] transition-colors ${
+                isActive ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
               {item.id === 'notifications' && notificationCount > 0 && (
                 <span className="mobile-nav-dot" />
               )}
               <item.icon size={21} strokeWidth={isActive ? 2.5 : 1.8} />
-              <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
+              <span className="text-[10px] font-medium" style={{ fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
             </button>
           );
         })}
@@ -2266,15 +2179,9 @@ const HomePage = () => {
         .mobile-spacer { display: block !important; }
         @media (min-width: 768px) { .mobile-spacer { display: none !important; } }
 
-        /* Main content left margin (desktop) */
+        /* Main content: no extra margin; AppLayout already reserves space for sidebar */
         .main-content {
           margin-left: 0;
-          transition: margin-left 0.28s cubic-bezier(0.16,1,0.3,1);
-        }
-        @media (min-width: 1024px) {
-          .main-content {
-            margin-left: ${mainMargin}px;
-          }
         }
 
         /* Content grid: 1-col on mobile → 2-col at 768px → 3-col at 1280px */
@@ -2284,13 +2191,13 @@ const HomePage = () => {
         }
         @media (min-width: 768px) {
           .content-grid {
-            grid-template-columns: 240px 1fr !important;
+            grid-template-columns: 260px 1fr !important;
           }
           .profile-col { display: block !important; }
         }
         @media (min-width: 1280px) {
           .content-grid {
-            grid-template-columns: 240px 1fr 272px !important;
+            grid-template-columns: 260px 1fr 320px !important;
           }
           .right-col { display: block !important; }
         }

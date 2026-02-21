@@ -105,6 +105,14 @@ const getPostById = async (postId, userId = null) => {
     post.isLiked = post.likes && post.likes.some((id) => id.toString() === userId.toString());
     post.isSaved = post.savedBy && post.savedBy.some((id) => id.toString() === userId.toString());
   }
+
+  // Record view and update author's post impressions (don't count when author views own post)
+  const authorId = post.author?._id || post.author;
+  if (authorId && (!userId || userId.toString() !== authorId.toString())) {
+    await Post.findByIdAndUpdate(postId, { $inc: { views: 1 } });
+    await User.findByIdAndUpdate(authorId, { $inc: { 'stats.postImpressions': 1 } });
+  }
+
   return post;
 };
 
@@ -181,6 +189,9 @@ const toggleSave = async (postId, userId) => {
   }
   post.savedBy = savedIds;
   await post.save();
+
+  // Keep user's savedCount in sync (userId = the user who is saving/unsaving)
+  await User.findByIdAndUpdate(userId, { $inc: { 'stats.savedCount': saved ? 1 : -1 } });
 
   return { saved, savedCount: post.savedCount };
 };

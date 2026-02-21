@@ -121,6 +121,9 @@ const userSchema = new mongoose.Schema(
       likesCount: { type: Number, default: 0 },
       questionsAsked: { type: Number, default: 0 },
       answersGiven: { type: Number, default: 0 },
+      savedCount: { type: Number, default: 0 },
+      profileViewers: { type: Number, default: 0 },
+      postImpressions: { type: Number, default: 0 },
     },
 
     background: {

@@ -8,6 +8,11 @@ const userPagination = new Pagination(User);
 const followPagination = new Pagination(Follow);
 
 const getProfile = async (userId, viewerId = null) => {
+  // When someone else views this profile, increment profileViewers (then fetch so counts are fresh)
+  if (viewerId && viewerId.toString() !== userId.toString()) {
+    await User.findByIdAndUpdate(userId, { $inc: { 'stats.profileViewers': 1 } });
+  }
+
   const user = await User.findById(userId)
     .select('-password -refreshTokens -fcmTokens')
     .lean();
