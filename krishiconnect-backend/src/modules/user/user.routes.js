@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('./user.controller');
-const { validate, updatePasswordSchema, updateLanguageSchema } = require('./user.validation');
+const { validate, updatePasswordSchema, updateLanguageSchema, updateThemeSchema } = require('./user.validation');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const { uploadSingleProfilePic, uploadSingleBackground } = require('../../middlewares/upload.middleware');
 const { uploadToCloudinary } = require('../../utils/uploadToCloudinary');
@@ -17,6 +17,7 @@ router.patch('/me', userController.updateMe);
 router.get('/me/saved', userController.getMySavedPosts);
 router.put('/me/update-password', validate(updatePasswordSchema), userController.updatePassword);
 router.put('/me/preferences/language', validate(updateLanguageSchema), userController.updateLanguage);
+router.put('/me/preferences/theme', validate(updateThemeSchema), userController.updateTheme);
 
 router.post(
   '/me/avatar',

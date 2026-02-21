@@ -7,6 +7,10 @@ const updateLanguageSchema = Joi.object({
   }),
 });
 
+const updateThemeSchema = Joi.object({
+  darkMode: Joi.boolean().required(),
+});
+
 const updatePasswordSchema = Joi.object({
   currentPassword: Joi.string().required().messages({
     'string.empty': 'Current password is required',
@@ -35,6 +39,7 @@ const validate = (schema) => (req, res, next) => {
 
 module.exports = {
   updateLanguageSchema,
+  updateThemeSchema,
   updatePasswordSchema,
   validate,
 };

@@ -90,13 +90,13 @@ const STATES = ['All', 'Punjab', 'West Bengal', 'Haryana', 'Maharashtra', 'Himac
 // SUB-COMPONENTS
 // ============================================================================
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse shadow-sm">
+  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 animate-pulse shadow-sm">
     <div className="flex items-center gap-3 mb-3">
-      <div className="w-14 h-14 rounded-full bg-gray-200 flex-shrink-0" />
+      <div className="w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
       <div className="flex-1 space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-3/4" />
-        <div className="h-3 bg-gray-100 rounded w-1/2" />
-        <div className="h-3 bg-gray-100 rounded w-2/3" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4" />
+        <div className="h-3 bg-gray-100 dark:bg-gray-600 rounded w-1/2" />
+        <div className="h-3 bg-gray-100 dark:bg-gray-600 rounded w-2/3" />
       </div>
     </div>
     <div className="h-8 bg-gray-100 rounded-xl" />
@@ -104,12 +104,12 @@ const SkeletonCard = () => (
 );
 
 const StatCard = ({ icon, label, value, color }) => (
-  <div className={`bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow`}>
+  <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-all transition-colors duration-200`}>
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
       {icon}
     </div>
-    <p className="text-2xl font-black text-gray-900">{value}</p>
-    <p className="text-xs text-gray-500 font-medium mt-0.5">{label}</p>
+    <p className="text-2xl font-black text-gray-900 dark:text-gray-100">{value}</p>
+    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">{label}</p>
   </div>
 );
 
@@ -133,7 +133,7 @@ const ConnectionRequestCard = ({ request, onAccept, onDecline }) => {
   };
 
   if (done) return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center gap-3">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center gap-3 transition-colors duration-200">
       {action === 'accept'
         ? <><CheckCircle size={20} className="text-green-500 flex-shrink-0" /><span className="text-sm text-gray-600 font-medium">Connected with <strong>{request.sender.name}</strong></span></>
         : <><X size={20} className="text-gray-400 flex-shrink-0" /><span className="text-sm text-gray-400">Request declined</span></>}
@@ -141,12 +141,12 @@ const ConnectionRequestCard = ({ request, onAccept, onDecline }) => {
   );
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-all transition-colors duration-200">
       <div className="flex items-start gap-3">
         <img src={request.sender.avatar} alt={request.sender.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-green-100" />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-gray-900 text-sm truncate">{request.sender.name}</p>
-          <p className="text-xs text-gray-500 truncate">{request.sender.specialty}</p>
+          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">{request.sender.name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{request.sender.specialty}</p>
           <div className="flex items-center gap-1 mt-1">
             <MapPin size={10} className="text-gray-400" />
             <span className="text-xs text-gray-400">{request.sender.state}</span>
@@ -186,7 +186,7 @@ const FarmerCard = ({ farmer, onConnect }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 group">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 group transition-colors duration-200">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -194,8 +194,8 @@ const FarmerCard = ({ farmer, onConnect }) => {
             {farmer.verified && <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white"><CheckCircle size={10} className="text-white" /></span>}
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm leading-tight">{farmer.name}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{farmer.specialty}</p>
+            <p className="font-bold text-gray-900 dark:text-gray-100 text-sm leading-tight">{farmer.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{farmer.specialty}</p>
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={10} className="text-gray-400" />
               <span className="text-xs text-gray-400">{farmer.state}</span>
@@ -255,11 +255,11 @@ const ConnectionCard = ({ connection, onRemove }) => {
   if (removed) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all flex items-center gap-3">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-all flex items-center gap-3">
       <img src={connection.avatar} alt={connection.name} className="w-12 h-12 rounded-full object-cover border-2 border-green-100 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-gray-900 text-sm truncate">{connection.name}</p>
-        <p className="text-xs text-gray-500 truncate">{connection.specialty}</p>
+        <p className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">{connection.name}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{connection.specialty}</p>
         <div className="flex items-center gap-1 mt-0.5">
           <MapPin size={9} className="text-gray-400" />
           <span className="text-xs text-gray-400">{connection.state}</span>
@@ -272,12 +272,12 @@ const ConnectionCard = ({ connection, onRemove }) => {
           <MessageSquare size={15} />
         </button>
         <div className="relative">
-          <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400">
+          <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-400">
             <ChevronDown size={15} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-10 py-1 min-w-[140px]">
-              <button onClick={handleRemove} disabled={loading} className="w-full px-4 py-2 text-xs text-red-500 hover:bg-red-50 text-left flex items-center gap-2 font-medium">
+            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl z-10 py-1 min-w-[140px]">
+              <button onClick={handleRemove} disabled={loading} className="w-full px-4 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 text-left flex items-center gap-2 font-medium">
                 {loading ? <Loader size={12} className="animate-spin" /> : <X size={12} />} Remove Connection
               </button>
             </div>
@@ -351,19 +351,19 @@ const NetworkPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-20 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20 shadow-sm transition-colors duration-200">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                <Users size={22} className="text-green-600" /> Farmer Network
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Users size={22} className="text-green-600 dark:text-green-400" /> Farmer Network
               </h1>
-              <p className="text-xs text-gray-500 mt-0.5">Connect with farmers across India</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Connect with farmers across India</p>
             </div>
             <button onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition ${showFilters ? 'bg-green-50 text-green-700 border-green-200' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition ${showFilters ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
               <Filter size={15} /> Filters
             </button>
           </div>
@@ -375,23 +375,23 @@ const NetworkPage = () => {
             <input type="search" value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Search farmers by name, specialty, or crop..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 focus:bg-white transition" />
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 focus:bg-white dark:focus:bg-gray-600 transition placeholder-gray-500 dark:placeholder-gray-400" />
           </div>
 
           {/* Filters */}
           {showFilters && (
-            <div className="mt-3 flex flex-wrap gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="mt-3 flex flex-wrap gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
               <div>
-                <label className="text-xs font-semibold text-gray-500 block mb-1">Specialty</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Specialty</label>
                 <select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-200 bg-white">
+                  className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                   {SPECIALTIES.map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 block mb-1">State</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">State</label>
                 <select value={selectedState} onChange={(e) => setSelectedState(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-200 bg-white">
+                  className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                   {STATES.map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
@@ -406,10 +406,10 @@ const NetworkPage = () => {
           <div className="flex gap-1 mt-3">
             {tabs.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-semibold rounded-xl transition relative ${activeTab === tab.id ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:bg-gray-100'}`}>
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition relative ${activeTab === tab.id ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
                 {tab.label}
                 {tab.count !== null && tab.count > 0 && (
-                  <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full font-bold ${activeTab === tab.id ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full font-bold ${activeTab === tab.id ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
                     {tab.count}
                   </span>
                 )}
@@ -432,9 +432,9 @@ const NetworkPage = () => {
 
         {/* Error */}
         {error && (
-          <div className="bg-white rounded-2xl border border-red-100 p-8 text-center shadow-sm mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900/50 p-8 text-center shadow-sm mb-6">
             <AlertCircle size={40} className="text-red-400 mx-auto mb-3" />
-            <p className="text-gray-700 font-semibold">{error}</p>
+            <p className="text-gray-700 dark:text-gray-200 font-semibold">{error}</p>
             <button onClick={loadData} className="mt-4 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition flex items-center gap-2 mx-auto">
               <RefreshCw size={14} /> Retry
             </button>
@@ -449,10 +449,10 @@ const NetworkPage = () => {
                 {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
               </div>
             ) : filteredFarmers.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center shadow-sm">
                 <div className="text-5xl mb-4">🌾</div>
-                <p className="font-bold text-gray-900 text-lg">No farmers found</p>
-                <p className="text-gray-400 text-sm mt-2">Try adjusting your search or filters</p>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">No farmers found</p>
+                <p className="text-gray-400 dark:text-gray-400 text-sm mt-2">Try adjusting your search or filters</p>
                 <button onClick={() => { setSearchQuery(''); setSelectedSpecialty('All'); setSelectedState('All'); loadData(); }}
                   className="mt-4 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
                   Clear Filters
@@ -475,10 +475,10 @@ const NetworkPage = () => {
             {loading ? (
               <div className="space-y-3">{[1,2,3].map(i => <SkeletonCard key={i} />)}</div>
             ) : connections.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center shadow-sm">
                 <div className="text-5xl mb-4">🤝</div>
-                <p className="font-bold text-gray-900 text-lg">No connections yet</p>
-                <p className="text-gray-400 text-sm mt-2">Start connecting with farmers in your area</p>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">No connections yet</p>
+                <p className="text-gray-400 dark:text-gray-400 text-sm mt-2">Start connecting with farmers in your area</p>
                 <button onClick={() => setActiveTab('discover')} className="mt-4 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
                   Discover Farmers
                 </button>
@@ -499,10 +499,10 @@ const NetworkPage = () => {
             {loading ? (
               <div className="space-y-3">{[1,2,3].map(i => <SkeletonCard key={i} />)}</div>
             ) : requests.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center shadow-sm">
                 <div className="text-5xl mb-4">📬</div>
-                <p className="font-bold text-gray-900 text-lg">No pending requests</p>
-                <p className="text-gray-400 text-sm mt-2">You're all caught up!</p>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">No pending requests</p>
+                <p className="text-gray-400 dark:text-gray-400 text-sm mt-2">You're all caught up!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

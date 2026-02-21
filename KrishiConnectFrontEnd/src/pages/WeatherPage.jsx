@@ -433,7 +433,7 @@ const WeatherPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
@@ -441,7 +441,7 @@ const WeatherPage = () => {
         @keyframes slideIn { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: #f3f4f6; }
         ::-webkit-scrollbar-thumb { background: #d1fae5; border-radius: 2px; }
@@ -462,121 +462,73 @@ const WeatherPage = () => {
         </div>
       )}
 
-      {/* Sticky top bar - exact match to KrishiConnect Home top bar */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 30,
-        background: 'rgba(255, 255, 255, 0.92)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid #e8edf2',
-        display: 'flex', alignItems: 'center', gap: 14,
-        padding: '0 24px', height: 64,
-        boxShadow: '0 1px 0 rgb(0 0 0 / 0.04)',
-      }}>
-        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#166534' }}>🌦️ Weather</span>
-        <div style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
-          <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            placeholder="Search city, district, or village..."
-            value={locationInput}
-            onChange={e => setLocationInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSearch(e))}
-            style={{
-              width: '100%', paddingLeft: 40, paddingRight: 16, paddingTop: 9, paddingBottom: 9,
-              fontSize: 13, background: '#f8fafc', border: '1.5px solid #e8edf2', borderRadius: 99,
-              fontFamily: "'DM Sans', sans-serif", color: '#1e293b', outline: 'none',
-            }}
-          />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
-          <button
-            onClick={() => loadAllData(activeLocation, true)}
-            disabled={refreshing || loading}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px',
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: 'white',
-              borderRadius: 11, fontSize: 13, fontWeight: 700,
-              boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)', border: 'none', cursor: 'pointer',
-              opacity: (refreshing || loading) ? 0.7 : 1, transition: 'all 0.15s ease',
-            }}
-          >
-            <RefreshCw size={16} style={{ flexShrink: 0 }} />
-            {refreshing ? 'Updating...' : 'Refresh'}
-          </button>
+      {/* Header - same pattern as NetworkPage, AlertsPage, MarketPage */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20 shadow-sm transition-colors duration-200">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <CloudRain size={22} className="text-green-600 dark:text-green-400" /> Weather
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Forecast, alerts & farming insights</p>
+            </div>
+            <button
+              onClick={() => loadAllData(activeLocation, true)}
+              disabled={refreshing || loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-70 transition shadow-sm"
+            >
+              <RefreshCw size={16} className={refreshing || loading ? 'animate-spin' : ''} />
+              {refreshing ? 'Updating...' : 'Refresh'}
+            </button>
+          </div>
+
+          {/* Search + GPS */}
+          <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
+            <div className="flex-1 min-w-[200px] relative">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+              <input
+                ref={searchRef}
+                type="text"
+                placeholder="Search city, district, or village..."
+                value={locationInput}
+                onChange={e => setLocationInput(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 focus:bg-white dark:focus:bg-gray-600 transition placeholder-gray-500 dark:placeholder-gray-400"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              onClick={handleGPS}
+              disabled={gpsLoading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+            >
+              <Navigation size={14} className={gpsLoading ? 'animate-pulse text-gray-400' : 'text-green-600 dark:text-green-400'} />
+              {gpsLoading ? 'Detecting...' : 'Use GPS'}
+            </button>
+          </form>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '24px 20px 3rem' }}>
+      <div className="max-w-5xl mx-auto px-4 py-6">
 
-        {/* ── SEARCH BAR ── */}
-        <form onSubmit={handleSearch} style={{
-          display: 'flex', gap: '0.6rem', marginBottom: '1.5rem', flexWrap: 'wrap',
-        }}>
-          <div style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Search city, district, or village..."
-              value={locationInput}
-              onChange={e => setLocationInput(e.target.value)}
-              style={{
-                width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem',
-                border: '1.5px solid #e5e7eb', borderRadius: '0.75rem',
-                fontSize: '0.875rem', background: '#fff', outline: 'none',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.15)'; }}
-              onBlur={e => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-            />
-          </div>
-          <button type="submit" style={{
-            padding: '0.75rem 1.25rem', background: '#10b981', color: '#fff',
-            border: 'none', borderRadius: '0.75rem', cursor: 'pointer',
-            fontWeight: '600', fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif",
-            transition: 'background 0.2s',
-          }}
-            onMouseEnter={e => e.target.style.background = '#059669'}
-            onMouseLeave={e => e.target.style.background = '#10b981'}
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            onClick={handleGPS}
-            disabled={gpsLoading}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              padding: '0.75rem 1rem', background: '#fff',
-              border: '1.5px solid #e5e7eb', borderRadius: '0.75rem',
-              cursor: 'pointer', fontSize: '0.82rem', fontWeight: '500',
-              color: '#374151', transition: 'all 0.2s',
-            }}
-          >
-            <Navigation size={14} style={{ color: gpsLoading ? '#9ca3af' : '#10b981', animation: gpsLoading ? 'pulse 1s ease infinite' : 'none' }} />
-            {gpsLoading ? 'Detecting...' : 'Use GPS'}
-          </button>
-        </form>
-
-        {/* ── ERROR STATE ── */}
+        {/* Error */}
         {error && (
-          <div style={{
-            background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '1rem',
-            padding: '1.5rem', textAlign: 'center', marginBottom: '1.5rem',
-          }}>
-            <AlertCircle size={32} style={{ color: '#dc2626', marginBottom: '0.5rem' }} />
-            <p style={{ color: '#991b1b', fontWeight: '600' }}>{error}</p>
-            <button onClick={() => loadAllData(activeLocation)} style={{
-              marginTop: '0.75rem', padding: '0.5rem 1.25rem',
-              background: '#dc2626', color: '#fff', border: 'none',
-              borderRadius: '0.6rem', cursor: 'pointer', fontWeight: '600',
-            }}>Retry</button>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-2xl p-6 text-center mb-6">
+            <AlertCircle size={32} className="text-red-500 mx-auto mb-2" />
+            <p className="text-red-700 dark:text-red-300 font-semibold">{error}</p>
+            <button onClick={() => loadAllData(activeLocation)} className="mt-3 px-5 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition">
+              Retry
+            </button>
           </div>
         )}
 
-        {/* ── MAIN GRID ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
           {/* ── CURRENT WEATHER CARD ── */}
           <div style={{
@@ -651,13 +603,9 @@ const WeatherPage = () => {
             ) : null}
           </div>
 
-          {/* ── 7-DAY FORECAST ── */}
-          <div style={{
-            background: '#fff', borderRadius: '1.5rem', padding: '1.5rem',
-            border: '1.5px solid #e5e7eb',
-            animation: 'fadeIn 0.5s ease 0.1s both',
-          }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#111827', fontFamily: "'Lora', Georgia, serif", marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          {/* 7-Day Forecast */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-200">
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               📅 7-Day Forecast
             </h3>
             {loading ? (
@@ -673,43 +621,30 @@ const WeatherPage = () => {
             )}
           </div>
 
-          {/* ── HOURLY CHART ── */}
-          <div style={{
-            background: '#fff', borderRadius: '1.5rem', padding: '1.5rem',
-            border: '1.5px solid #e5e7eb',
-            gridColumn: '1 / -1',
-            animation: 'fadeIn 0.5s ease 0.15s both',
-          }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#111827', fontFamily: "'Lora', Georgia, serif", marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Clock size={16} style={{ color: '#10b981' }} /> Hourly Temperature & Rain Forecast
+          {/* Hourly Chart - full width */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm lg:col-span-2 transition-colors duration-200">
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+              <Clock size={16} className="text-green-600 dark:text-green-400" /> Hourly Temperature & Rain Forecast
             </h3>
-            <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.75rem' }}>Bar height = temperature · % above bar = rain probability</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Bar height = temperature · % above bar = rain probability</p>
             {loading ? <SkeletonBlock w="100%" h="120px" rounded="0.75rem" /> : (
               <HourlyChart data={forecast?.hourly || []} />
             )}
           </div>
 
-          {/* ── TABS: INSIGHTS | ALERTS | FAVORITES ── */}
-          <div style={{
-            background: '#fff', borderRadius: '1.5rem', padding: '1.5rem',
-            border: '1.5px solid #e5e7eb',
-            gridColumn: '1 / -1',
-            animation: 'fadeIn 0.5s ease 0.2s both',
-          }}>
-            {/* Tab Bar */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          {/* Tabs: Insights | Alerts | Favorites - full width */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm lg:col-span-2 transition-colors duration-200">
+            <div className="flex gap-2 mb-5 flex-wrap">
               {[
                 { id: 'insights', label: '🌱 Farming Insights' },
                 { id: 'alerts', label: `🚨 Alerts ${alerts.length > 0 ? `(${alerts.length})` : ''}` },
                 { id: 'favorites', label: '⭐ Saved Locations' },
               ].map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                  padding: '0.5rem 1rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer',
-                  background: activeTab === tab.id ? '#065f46' : '#f3f4f6',
-                  color: activeTab === tab.id ? '#fff' : '#374151',
-                  fontSize: '0.82rem', fontWeight: '600', transition: 'all 0.2s',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}>
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 text-sm font-semibold rounded-xl transition border-none cursor-pointer ${activeTab === tab.id ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                >
                   {tab.label}
                 </button>
               ))}

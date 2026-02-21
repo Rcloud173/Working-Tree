@@ -10,7 +10,7 @@ import hi from './locales/hi.json';
 import mr from './locales/mr.json';
 
 const LANGUAGE_KEY = 'app_language';
-const SUPPORTED_LANGS = ['en', 'hi', 'mr'];
+export const SUPPORTED_LANGS = ['en', 'hi', 'mr'];
 const DEFAULT_LANG = 'en';
 
 export function getStoredLanguage() {

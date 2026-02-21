@@ -10,15 +10,18 @@ const AppLayout = () => {
   const [notificationCount] = useState(5); // TODO: Fetch from API
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200 flex">
       <LeftSidebar
         open={sidebarOpen}
         setOpen={setSidebarOpen}
         notificationCount={notificationCount}
       />
-      <div className={`transition-all duration-300 bg-gray-50 min-h-screen ${sidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
+      {/* Main content: reserve space for fixed sidebar so it never overlaps */}
+      <main
+        className={`flex-1 min-w-0 transition-all duration-300 bg-gray-50 dark:bg-gray-900 min-h-screen ${sidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}
+      >
         <Outlet context={{ sidebarOpen, setSidebarOpen }} />
-      </div>
+      </main>
     </div>
   );
 };

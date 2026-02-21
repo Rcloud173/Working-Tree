@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { authStore } from './store/authStore'
+import { useThemeStore } from './store/themeStore'
 import { getLanguageToUse } from './i18n'
 import i18n from './i18n'
 import { SocketProvider } from './context/SocketContext'
@@ -15,6 +16,7 @@ import NetworkPage from './pages/NetworkPage'
 import SettingsPage from './pages/SettingsPage'
 import WeatherPage from './pages/WeatherPage'
 import MarketPage from './pages/MarketPage'
+import CropDoctor from './pages/CropDoctor'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
@@ -25,6 +27,15 @@ function App() {
     const lang = getLanguageToUse(user?.preferences?.language)
     if (i18n.language !== lang) {
       i18n.changeLanguage(lang)
+    }
+  }, [])
+
+  // Sync theme from backend user preference on load (if logged in)
+  useEffect(() => {
+    const user = authStore.getState().user
+    const prefDark = user?.preferences?.darkMode
+    if (typeof prefDark === 'boolean') {
+      useThemeStore.getState().setDarkMode(prefDark)
     }
   }, [])
 
@@ -53,6 +64,7 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/weather" element={<WeatherPage />} />
           <Route path="/market" element={<MarketPage />} />
+          <Route path="/crop-doctor" element={<CropDoctor />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

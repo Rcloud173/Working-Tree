@@ -1,6 +1,7 @@
 const chatService = require('./chat.service');
 const ApiResponse = require('../../utils/ApiResponse');
 const asyncHandler = require('../../utils/asyncHandler');
+const { uploadToCloudinary } = require('../../utils/uploadToCloudinary');
 
 const createConversation = asyncHandler(async (req, res) => {
   const { type = 'direct', participants } = req.body;
@@ -45,9 +46,22 @@ const getMessages = asyncHandler(async (req, res) => {
   );
 });
 
+/** POST /upload — multipart file (image). Returns { url } for use in image messages. */
+const uploadChatMedia = asyncHandler(async (req, res) => {
+  if (!req.file || !req.file.buffer) {
+    return res.status(400).json(new ApiResponse(400, null, 'No file uploaded'));
+  }
+  const result = await uploadToCloudinary(req.file.buffer, {
+    folder: 'krishiconnect/chat',
+    resourceType: 'image',
+  });
+  res.status(200).json(new ApiResponse(200, { url: result.url }, 'Upload successful'));
+});
+
 module.exports = {
   createConversation,
   startConversation,
   getConversations,
   getMessages,
+  uploadChatMedia,
 };

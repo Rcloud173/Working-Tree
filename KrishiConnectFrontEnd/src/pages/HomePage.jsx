@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Heart, MessageCircle, Share2, Bookmark, Search, Home, Users, Briefcase,
   MessageSquare, Bell, User, Settings, MoreHorizontal, TrendingUp, Droplet,
   Wind, X, Upload, Loader, Edit3, Award, MapPin, LinkIcon, Eye,
   ChevronDown, ChevronUp, Menu, ArrowRight, Plus, Flag, CheckCircle,
-  AlertCircle, RefreshCw, Send, Image, FileText, Sparkles, HelpCircle
+  AlertCircle, RefreshCw, Send, Image, FileText, Sparkles, HelpCircle, Languages
 } from 'lucide-react';
 import { postService } from '../services/post.service';
 import { userService } from '../services/user.service';
 import { authStore } from '../store/authStore';
+import { useTranslatePost } from '../hooks/useTranslatePost';
 
 // ============================================================================
 // API: postService + userService; demo fallback for weather/market/news
@@ -989,11 +991,32 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
   const displayContent = isLong && !showMore ? content.slice(0, 180) + '…' : content;
   const isOwn = post?.author?._id === currentUser?._id;
 
+  const { t } = useTranslation();
+  const {
+    translatedText,
+    loading: translateLoading,
+    error: translateError,
+    translate,
+    showTranslated,
+    setShowTranslated,
+    toggleView,
+  } = useTranslatePost(content);
+
+  const isLongTranslated = translatedText && translatedText.length > 180;
+  const displayTranslated =
+    showTranslated && translatedText
+      ? isLongTranslated && !showMore
+        ? translatedText.slice(0, 180) + '…'
+        : translatedText
+      : '';
+  const bodyToShow =
+    showTranslated && translatedText ? displayTranslated : displayContent;
+
   return (
     <>
       {showReportModal && <ReportModal postId={post._id} onClose={() => setShowReportModal(false)} />}
 
-      <article className="card post-card anim-fade-slide" style={{ marginBottom: 12, overflow: 'hidden' }}>
+      <article className="card post-card anim-fade-slide bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none transition-colors duration-200" style={{ marginBottom: 12, overflow: 'hidden' }}>
         {/* Post Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '18px 20px 12px' }}>
           <img src={post.author.avatar} alt={post.author.name}
@@ -1018,7 +1041,7 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
                 {post.author.name}
               </button>
               {post.author.verified && (
-                <span title="Verified Farmer" style={{ display: 'flex', alignItems: 'center' }}>
+                <span title={t('post.verified')} style={{ display: 'flex', alignItems: 'center' }}>
                   <CheckCircle size={14} fill="#3b82f6" color="white" />
                 </span>
               )}
@@ -1055,7 +1078,7 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
                     {followLoading ? <Loader size={14} className="spin" /> : <Users size={14} />}
-                    {isFollowing ? 'Unfollow' : 'Follow'} {post.author.name.split(' ')[0]}
+                    {isFollowing ? t('post.unfollow') : t('post.follow')} {post.author.name.split(' ')[0]}
                   </button>
                 )}
                 {isOwn && onPostDeleted && (
@@ -1078,7 +1101,7 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
                     {deleteLoading ? <Loader size={14} className="spin" /> : <X size={14} />}
-                    Delete Post
+                    {t('post.deletePost')}
                   </button>
                 )}
                 <button onClick={() => { setShowDropdown(false); setShowReportModal(true); }} className="btn" style={{
@@ -1089,7 +1112,7 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
                   onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
-                  <Flag size={14} /> Report Post
+                  <Flag size={14} /> {t('post.reportPost')}
                 </button>
               </div>
             )}
@@ -1099,16 +1122,52 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
         {/* Content */}
         <div style={{ padding: '0 20px 14px' }}>
           <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.65 }}>
-            {displayContent}
-            {isLong && (
+            {bodyToShow}
+            {(isLong && !showTranslated) || (showTranslated && isLongTranslated) ? (
               <button onClick={() => setShowMore(!showMore)} className="btn" style={{
                 color: '#16a34a', fontWeight: 600, fontSize: 13,
                 background: 'none', marginLeft: 5, padding: 0,
               }}>
-                {showMore ? 'Show less' : 'more'}
+                {showMore ? t('post.showLess') : t('post.more')}
               </button>
-            )}
+            ) : null}
           </p>
+          {content.trim() && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              {!translatedText ? (
+                <button
+                  type="button"
+                  onClick={translate}
+                  disabled={translateLoading}
+                  className="btn"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    fontSize: 12, color: '#16a34a', fontWeight: 600,
+                    background: '#f0fdf4', padding: '4px 10px', borderRadius: 8,
+                    border: '1px solid #dcfce7',
+                  }}
+                >
+                  {translateLoading ? <Loader size={12} className="animate-spin" /> : <Languages size={12} />}
+                  {translateLoading ? t('post.translating') : t('post.translate')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={toggleView}
+                  className="btn"
+                  style={{
+                    fontSize: 12, color: '#16a34a', fontWeight: 600,
+                    background: 'none', padding: '4px 0', border: 'none',
+                  }}
+                >
+                  {showTranslated ? t('post.showOriginal') : t('post.showTranslated')}
+                </button>
+              )}
+              {translateError && (
+                <span style={{ fontSize: 11, color: '#dc2626' }}>{t('post.translationFailed')}</span>
+              )}
+            </div>
+          )}
 
           {/* Tags */}
           {post.tags?.length > 0 && (

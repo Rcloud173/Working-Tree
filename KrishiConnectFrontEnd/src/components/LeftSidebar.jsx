@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Users, Briefcase, MessageSquare, Bell, User, Settings, Menu, ChevronDown, ChevronUp, LogIn, CloudRain, BarChart2 } from 'lucide-react';
+import { Home, Users, Briefcase, MessageSquare, Bell, User, Settings, Menu, ChevronDown, ChevronUp, LogIn, CloudRain, BarChart2, Leaf } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 // ============================================================================
@@ -25,6 +25,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
     { id: 'notifications', icon: Bell, labelKey: 'nav.alerts', badge: notificationCount > 0 ? notificationCount : null, route: '/alerts' },
     { id: 'weather', icon: CloudRain, labelKey: 'nav.weather', route: '/weather' },
     { id: 'market', icon: BarChart2, labelKey: 'nav.market', route: '/market' },
+    { id: 'cropDoctor', icon: Leaf, labelKey: 'nav.cropDoctor', route: '/crop-doctor' },
     { id: 'profile', icon: User, labelKey: 'nav.profile', route: '/profile' },
   ];
 
@@ -38,6 +39,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
     if (path.startsWith('/alerts') || path.startsWith('/notifications')) return 'notifications';
     if (path.startsWith('/weather')) return 'weather';
     if (path.startsWith('/market')) return 'market';
+    if (path.startsWith('/crop-doctor')) return 'cropDoctor';
     if (path.startsWith('/profile')) return 'profile';
     return 'home';
   };
@@ -52,14 +54,14 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-40 transition-all duration-300 ${open ? 'w-60' : 'w-20'} overflow-hidden shadow-sm`}
+        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 z-40 transition-all duration-300 ${open ? 'w-60' : 'w-20'} overflow-hidden shadow-sm`}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between min-h-[64px]">
-          {open && <span className="text-xl font-black text-green-700 whitespace-nowrap">🌾 KrishiConnect</span>}
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between min-h-[64px]">
+          {open && <span className="text-xl font-black text-green-700 dark:text-green-400 whitespace-nowrap">🌾 KrishiConnect</span>}
           <button
             onClick={() => setOpen(!open)}
-            className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-500 flex-shrink-0 ml-auto"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 dark:text-gray-400 flex-shrink-0 ml-auto"
           >
             <Menu size={18} />
           </button>
@@ -73,8 +75,8 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
               onClick={() => handleNavClick(item)}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                 activeNav === item.id
-                  ? 'bg-green-50 text-green-700 font-bold'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               } ${!open ? 'justify-center' : ''}`}
               title={!open ? t(item.labelKey) : ''}
             >
@@ -95,10 +97,10 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
         </nav>
 
         {/* Settings & Auth */}
-        <div className="p-3 border-t border-gray-100 space-y-1">
+        <div className="p-3 border-t border-gray-100 dark:border-gray-700 space-y-1">
           <button
             onClick={() => navigate('/settings')}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition ${!open ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition ${!open ? 'justify-center' : ''}`}
           >
             <Settings size={19} />
             {open && <span className="text-sm">{t('nav.settings')}</span>}
@@ -147,13 +149,13 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
 
       {/* Mobile Sidebar */}
       {open && (
-        <aside className="lg:hidden fixed left-0 top-0 h-screen bg-white z-50 w-72 shadow-2xl animate-slide-in">
+        <aside className="lg:hidden fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 z-50 w-72 shadow-2xl animate-slide-in">
           {/* Logo */}
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between min-h-[64px]">
-            <span className="text-xl font-black text-green-700 whitespace-nowrap">🌾 KrishiConnect</span>
+          <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between min-h-[64px]">
+            <span className="text-xl font-black text-green-700 dark:text-green-400 whitespace-nowrap">🌾 KrishiConnect</span>
             <button
               onClick={() => setOpen(false)}
-              className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-500"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 dark:text-gray-400"
             >
               <Menu size={18} />
             </button>
@@ -170,12 +172,12 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                   activeNav === item.id
-                    ? 'bg-green-50 text-green-700 font-bold'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <item.icon size={19} className="flex-shrink-0" />
-                <span className="text-sm flex-1 text-left">{item.label}</span>
+                <span className="text-sm flex-1 text-left">{t(item.labelKey)}</span>
                 {item.badge && (
                   <span className={`text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ${
                     item.badge === 'New' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'
@@ -188,16 +190,16 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
           </nav>
 
           {/* Settings & Auth */}
-          <div className="p-3 border-t border-gray-100 space-y-1">
+          <div className="p-3 border-t border-gray-100 dark:border-gray-700 space-y-1">
             <button
               onClick={() => {
                 navigate('/settings');
                 setOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               <Settings size={19} />
-              <span className="text-sm">Settings</span>
+              <span className="text-sm">{t('nav.settings')}</span>
             </button>
             {isLoggedIn ? (
               <button
@@ -205,7 +207,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
                   navigate(user?._id ? `/profile/${user._id}` : '/profile');
                   setOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition"
               >
                 {profilePhotoUrl ? (
                   <img src={profilePhotoUrl} alt={user.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
@@ -214,16 +216,16 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
                     <User size={14} className="text-emerald-600" />
                   </div>
                 )}
-                <span className="text-sm font-medium truncate">{user?.name || 'Profile'}</span>
+                <span className="text-sm font-medium truncate">{user?.name || t('nav.profile')}</span>
               </button>
             ) : (
               <Link
                 to="/login"
                 onClick={() => setOpen(false)}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition"
               >
                 <LogIn size={19} />
-                <span className="text-sm font-medium">Log in</span>
+                <span className="text-sm font-medium">{t('nav.login')}</span>
               </Link>
             )}
           </div>

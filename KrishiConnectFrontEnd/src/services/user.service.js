@@ -134,6 +134,12 @@ export const userService = {
     return data?.data ?? data;
   },
 
+  /** PUT /users/me/preferences/theme (requires auth). Body: { darkMode: boolean }. Returns updated user. */
+  async updateTheme(darkMode) {
+    const { data } = await request('PUT', '/users/me/preferences/theme', { darkMode });
+    return data?.data ?? data;
+  },
+
   /**
    * GET /users/me/saved — only the logged-in user's saved posts (requires auth).
    * Never use for another user's profile; backend returns 401 if not authenticated.

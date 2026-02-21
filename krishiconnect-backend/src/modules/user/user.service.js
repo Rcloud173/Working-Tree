@@ -90,6 +90,16 @@ const updateLanguagePreference = async (userId, language) => {
   return user;
 };
 
+const updateThemePreference = async (userId, darkMode) => {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: { 'preferences.darkMode': !!darkMode } },
+    { new: true, runValidators: true }
+  ).select('-password -refreshTokens -fcmTokens');
+  if (!user) throw new ApiError(404, 'User not found');
+  return user;
+};
+
 const updateAvatar = async (userId, avatarData) => {
   const user = await User.findById(userId);
 
@@ -313,6 +323,7 @@ module.exports = {
   getProfile,
   updateProfile,
   updateLanguagePreference,
+  updateThemePreference,
   updateAvatar,
   removeAvatar,
   updateProfilePhoto,

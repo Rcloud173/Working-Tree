@@ -34,4 +34,13 @@ export const chatService = {
     const pagination = data?.meta?.pagination ?? data?.pagination;
     return { messages: Array.isArray(list) ? list : [], pagination };
   },
+
+  /** POST /chat/upload — FormData with 'file' (image). Returns { url }. */
+  async uploadMedia(file) {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await api.post(`${chatBase}/upload`, form);
+    const out = data?.data ?? data;
+    return out?.url ?? out;
+  },
 };

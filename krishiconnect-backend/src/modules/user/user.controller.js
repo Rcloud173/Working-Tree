@@ -39,6 +39,12 @@ const updateLanguage = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, user, 'Language preference updated'));
 });
 
+const updateTheme = asyncHandler(async (req, res) => {
+  const { darkMode } = req.body;
+  const user = await userService.updateThemePreference(req.user._id, darkMode);
+  res.status(200).json(new ApiResponse(200, user, 'Theme preference updated'));
+});
+
 const uploadAvatar = asyncHandler(async (req, res) => {
   const avatarData = req.uploadResult;
   const user = await userService.updateAvatar(req.user._id, avatarData);
@@ -172,6 +178,7 @@ module.exports = {
   getUserById,
   getPublicUserPosts,
   getCanChat,
+  updateTheme,
   searchUsers,
   followUser,
   unfollowUser,

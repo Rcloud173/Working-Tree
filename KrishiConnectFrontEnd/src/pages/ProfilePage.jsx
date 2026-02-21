@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   MapPin, LinkIcon, Award, Briefcase, Users, Heart, MessageSquare,
@@ -157,6 +158,7 @@ const SavedPostCard = ({ post }) => (
 // MAIN PROFILE PAGE
 // ============================================================================
 const ProfilePage = () => {
+  const { t } = useTranslation();
   const { userId } = useParams();
   const navigate = useNavigate();
   // Select only primitive id to avoid re-renders from object reference changes
@@ -331,7 +333,7 @@ const ProfilePage = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <div className="max-w-3xl mx-auto">
         <div className="animate-pulse">
           <div className="h-48 bg-gray-200" />
@@ -375,7 +377,7 @@ const ProfilePage = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Edit Modal */}
       {showEditModal && (
         <EditProfileModal user={user} currentUserId={currentUserId} onClose={() => setShowEditModal(false)} onSaved={(updated) => { setUser(updated); }} />
@@ -405,7 +407,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white shadow-sm">
+        <div className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
           <div className="px-5 sm:px-8">
             {/* Avatar + Actions Row */}
             <div className="flex items-end justify-between -mt-14 sm:-mt-16 pb-4">
@@ -426,26 +428,26 @@ const ProfilePage = () => {
               </div>
               <div className="flex items-center gap-2 pb-1">
                 <button onClick={handleShare}
-                  className="px-3 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-50 transition flex items-center gap-1.5">
-                  <Share2 size={13} /> Share
+                  className="px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center gap-1.5">
+                  <Share2 size={13} /> {t('profile.share')}
                 </button>
                 {user.isOwnProfile ? (
                   <button onClick={() => setShowEditModal(true)}
                     className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition flex items-center gap-1.5 shadow-sm">
-                    <Edit3 size={13} /> Edit Profile
+                    <Edit3 size={13} /> {t('profile.editProfile')}
                   </button>
                 ) : (
                   <>
                     <button onClick={handleFollow} disabled={followLoading}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${following ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'}`}>
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${following ? 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 shadow-sm'}`}>
                       {followLoading ? <Loader size={13} className="animate-spin" /> : following ? <Check size={13} /> : <Plus size={13} />}
-                      {following ? 'Following' : 'Follow'}
-                    </button>
+{following ? t('profile.followingBtn') : t('profile.follow')}
+                  </button>
                     {canChat && (
                       <button onClick={handleChat} disabled={chatLoading}
                         className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 shadow-sm transition flex items-center gap-1.5">
                         {chatLoading ? <Loader size={13} className="animate-spin" /> : <MessageSquare size={13} />}
-                        Chat
+                        {t('profile.chat')}
                       </button>
                     )}
                   </>
@@ -493,10 +495,10 @@ const ProfilePage = () => {
           <div className="border-t border-gray-100 px-5 sm:px-8 py-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Followers', value: formatNumber(user.followersCount), icon: Users, color: 'text-green-600' },
-                { label: 'Following', value: formatNumber(user.followingCount), icon: Users, color: 'text-blue-600' },
-                { label: 'Posts', value: user.postsCount, icon: BookOpen, color: 'text-purple-600' },
-                { label: 'Profile Views', value: user.profileViewers, icon: Eye, color: 'text-orange-600' },
+                { label: t('profile.followers'), value: formatNumber(user.followersCount), icon: Users, color: 'text-green-600' },
+                { label: t('profile.following'), value: formatNumber(user.followingCount), icon: Users, color: 'text-blue-600' },
+                { label: t('profile.posts'), value: user.postsCount, icon: BookOpen, color: 'text-purple-600' },
+                { label: t('profile.profileViews'), value: user.profileViewers, icon: Eye, color: 'text-orange-600' },
               ].map(({ label, value, icon: Icon, color }) => (
                 <div key={label} className="text-center p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition group">
                   <Icon size={16} className={`${color} mx-auto mb-1 group-hover:scale-110 transition-transform`} />

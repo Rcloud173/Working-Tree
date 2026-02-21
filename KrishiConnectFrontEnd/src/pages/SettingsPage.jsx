@@ -11,6 +11,7 @@ import {
 import { authStore } from '../store/authStore';
 import { userService } from '../services/user.service';
 import { setStoredLanguage } from '../i18n';
+import { useTheme } from '../hooks/useTheme';
 
 // ============================================================================
 // ✅ API PLACEHOLDER FUNCTIONS
@@ -157,12 +158,12 @@ const Toggle = ({ checked, onChange, disabled = false }) => (
     aria-checked={checked}
     onClick={() => !disabled && onChange(!checked)}
     disabled={disabled}
-    className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-green-300 ${
-      checked ? 'bg-green-500' : 'bg-gray-300'
+    className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-green-300 dark:focus:ring-green-600 ${
+      checked ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
     } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
   >
     <span
-      className="inline-block w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5"
+      className="inline-block w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow-sm transition-transform duration-200 mt-0.5"
       style={{ transform: checked ? 'translateX(22px)' : 'translateX(2px)' }}
     />
   </button>
@@ -170,20 +171,20 @@ const Toggle = ({ checked, onChange, disabled = false }) => (
 
 /** Reusable section card wrapper */
 const SectionCard = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden ${className}`}>
+  <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden transition-colors duration-200 ${className}`}>
     {children}
   </div>
 );
 
 /** Section header inside a card */
 const SectionHeader = ({ icon: Icon, title, subtitle }) => (
-  <div className="px-5 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/60 flex items-center gap-3">
-    <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-      <Icon size={16} className="text-green-700" />
+  <div className="px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/80 flex items-center gap-3 transition-colors duration-200">
+    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+      <Icon size={16} className="text-green-700 dark:text-green-400" />
     </div>
     <div>
-      <h2 className="font-bold text-gray-900 text-sm">{title}</h2>
-      {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+      <h2 className="font-bold text-gray-900 dark:text-gray-100 text-sm">{title}</h2>
+      {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>}
     </div>
   </div>
 );
@@ -677,13 +678,32 @@ const PrivacySection = ({ data, onToast }) => {
 // ============================================================================
 const PreferencesSection = ({ data, onToast }) => {
   const { t, i18n } = useTranslation();
+  const { isDark, toggleDarkMode } = useTheme();
   const setLanguage = authStore.getState().setLanguage;
   const hasAuth = !!authStore.getState().accessToken;
   const [prefs, setPrefs] = useState(data);
   const [loading, setLoading] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
 
   const set = (field, value) => setPrefs(prev => ({ ...prev, [field]: value }));
+
+  const handleDarkModeToggle = async () => {
+    const next = toggleDarkMode();
+    set('theme', next ? 'dark' : 'light');
+    if (hasAuth) {
+      setThemeSaving(true);
+      try {
+        const updated = await userService.updateTheme(next);
+        if (updated?.preferences) authStore.setUser(updated);
+        onToast(t('settings.preferencesSaved'), 'success');
+      } catch {
+        onToast(t('settings.preferencesSaveFailed'), 'error');
+      } finally {
+        setThemeSaving(false);
+      }
+    }
+  };
 
   const handleLanguageChange = async (newLang) => {
     set('language', newLang);
@@ -721,44 +741,33 @@ const PreferencesSection = ({ data, onToast }) => {
       <SectionHeader icon={Sliders} title={t('settings.preferences')} subtitle={t('settings.preferencesSubtitle')} />
 
       <div className="px-5 sm:px-6 py-5 space-y-5">
-        {/* Theme */}
-        <div>
-          <label className="text-xs font-bold text-gray-500 block mb-2.5">{t('settings.theme')}</label>
-          <div className="flex gap-3">
-            {[
-              { value: 'light', icon: Sun,  labelKey: 'settings.themeLight' },
-              { value: 'dark',  icon: Moon, labelKey: 'settings.themeDark'  },
-            ].map(({ value, icon: Icon, labelKey }) => (
-              <button key={value} onClick={() => set('theme', value)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition ${
-                  prefs.theme === value
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
-                }`}>
-                <Icon size={15} />
-                {t(labelKey)}
-                {prefs.theme === value && <Check size={13} />}
-              </button>
-            ))}
+        {/* Dark Mode */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+              <Moon size={18} className="text-green-700 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('settings.theme')} / Dark Mode</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('settings.themeDark')} — {t('settings.themeLight')}</p>
+            </div>
           </div>
-          {prefs.theme === 'dark' && (
-            <p className="mt-2 text-xs text-gray-400 flex items-center gap-1.5 bg-orange-50 border border-orange-100 px-3 py-2 rounded-lg">
-              <Info size={12} className="text-orange-500 flex-shrink-0" />
-              {t('settings.darkModeHint')}
-            </p>
-          )}
+          <div className="flex items-center gap-2">
+            {themeSaving && <Loader size={14} className="animate-spin text-green-600 dark:text-green-400" />}
+            <Toggle checked={isDark} onChange={handleDarkModeToggle} disabled={themeSaving} />
+          </div>
         </div>
 
         {/* Language */}
         <div>
-          <label className="text-xs font-bold text-gray-500 block mb-1.5">{t('settings.language')}</label>
+          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">{t('settings.language')}</label>
           <div className="relative">
             <Globe size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <select
               value={['en', 'hi', 'mr'].includes(prefs.language) ? prefs.language : 'en'}
               onChange={(e) => handleLanguageChange(e.target.value)}
               disabled={languageSaving}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 bg-white appearance-none cursor-pointer disabled:opacity-70"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none cursor-pointer disabled:opacity-70 transition-colors duration-200"
             >
               {LANGUAGES.map(l => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -774,21 +783,21 @@ const PreferencesSection = ({ data, onToast }) => {
 
         {/* Location */}
         <div>
-          <label className="text-xs font-bold text-gray-500 block mb-1.5">{t('settings.location')}</label>
+          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">{t('settings.location')}</label>
           <div className="relative">
-            <MapPin size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <MapPin size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
             <input type="text" value={prefs.location}
               onChange={(e) => set('location', e.target.value)}
               placeholder={t('settings.locationPlaceholder')}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 transition" />
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200" />
           </div>
-          <p className="text-xs text-gray-400 mt-1">{t('settings.locationHint')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('settings.locationHint')}</p>
         </div>
       </div>
 
-      <div className="px-5 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/40 flex justify-end">
+      <div className="px-5 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/50 flex justify-end transition-colors duration-200">
         <button onClick={handleSave} disabled={loading}
-          className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition flex items-center gap-2 shadow-sm hover:shadow-md">
+          className="px-6 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition flex items-center gap-2 shadow-sm hover:shadow-md">
           {loading ? <Loader size={15} className="animate-spin" /> : <Save size={15} />}
           {loading ? t('settings.saving') : t('settings.savePreferences')}
         </button>
@@ -997,26 +1006,26 @@ const SettingsPage = () => {
   const activeLabel = activeSectionMeta ? t(activeSectionMeta.labelKey) : t('settings.title');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Global Toast */}
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
 
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-30 shadow-sm transition-colors duration-200">
         <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center gap-3">
           {/* Mobile menu toggle */}
           <button onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-xl text-gray-500 transition">
+            className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition">
             <Settings size={18} />
           </button>
-          <Settings size={20} className="text-green-600 hidden lg:block flex-shrink-0" />
+          <Settings size={20} className="text-green-600 dark:text-green-400 hidden lg:block flex-shrink-0" />
           <div className="flex-1">
-            <h1 className="font-black text-gray-900 text-lg leading-none">{t('settings.title')}</h1>
-            <p className="text-xs text-gray-400 mt-0.5 lg:hidden">{activeLabel}</p>
+            <h1 className="font-black text-gray-900 dark:text-gray-100 text-lg leading-none">{t('settings.title')}</h1>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 lg:hidden">{activeLabel}</p>
           </div>
-          <span className="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-lg font-bold border border-green-100">
+          <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2.5 py-1 rounded-lg font-bold border border-green-100 dark:border-green-800">
             🌾 KrishiConnect
           </span>
         </div>
@@ -1031,16 +1040,16 @@ const SettingsPage = () => {
             ${mobileSidebarOpen ? 'items-start pt-20 px-4' : ''}`}
             onClick={(e) => { if (e.target === e.currentTarget) setMobileSidebarOpen(false); }}>
 
-            <nav className="w-56 bg-white rounded-2xl border border-gray-100 shadow-sm p-2 sticky top-24 overflow-hidden">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 py-2">{t('settings.title')}</p>
+            <nav className="w-56 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-2 sticky top-24 overflow-hidden transition-colors duration-200">
+              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 py-2">{t('settings.title')}</p>
               {NAV_SECTIONS.map(({ id, icon: Icon, labelKey }) => (
                 <button key={id} onClick={() => handleNavClick(id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-0.5 ${
                     activeSection === id
                       ? id === 'danger'
-                        ? 'bg-red-50 text-red-600'
-                        : 'bg-green-50 text-green-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                        : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}>
                   <Icon size={16} className={activeSection === id && id === 'danger' ? 'text-red-500' : activeSection === id ? 'text-green-600' : 'text-gray-400'} />
                   {t(labelKey)}

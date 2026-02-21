@@ -146,6 +146,10 @@ const userSchema = new mongoose.Schema(
         enum: ['en', 'hi', 'mr'],
         default: 'en',
       },
+      darkMode: {
+        type: Boolean,
+        default: false,
+      },
       notifications: {
         push: { type: Boolean, default: true },
         email: { type: Boolean, default: true },

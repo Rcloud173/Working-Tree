@@ -1,4 +1,5 @@
 module.exports = {
+  darkMode: 'class',
   theme: {
     fontFamily: {
       'sans': ['Source Sans 3', 'sans-serif'],

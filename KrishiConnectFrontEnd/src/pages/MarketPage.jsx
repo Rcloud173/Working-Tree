@@ -424,13 +424,13 @@ const MarketPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: #f3f4f6; }
         ::-webkit-scrollbar-thumb { background: #d1fae5; border-radius: 2px; }
@@ -455,28 +455,12 @@ const MarketPage = () => {
 
       {/* Compare Panel */}
       {compareList.length >= 2 && (
-        <div style={{
-          position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
-          background: '#065f46', color: '#fff', padding: '0.75rem 1.5rem',
-          borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '1rem',
-          boxShadow: '0 8px 32px rgba(6,95,70,0.4)', zIndex: 1000,
-          animation: 'fadeIn 0.3s ease',
-        }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-            {compareList.length} items selected
-          </span>
-          <button onClick={() => setShowCompare(true)} style={{
-            background: '#fff', color: '#065f46', border: 'none',
-            padding: '0.4rem 1rem', borderRadius: '1rem',
-            fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer',
-          }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-green-700 dark:bg-green-800 text-white px-6 py-3 rounded-full shadow-lg z-[1000]">
+          <span className="text-sm font-semibold">{compareList.length} items selected</span>
+          <button onClick={() => setShowCompare(true)} className="bg-white text-green-700 dark:bg-gray-100 dark:text-green-800 px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 transition">
             Compare Now
           </button>
-          <button onClick={() => setCompareList([])} style={{
-            background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%',
-            width: '28px', height: '28px', cursor: 'pointer', color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <button onClick={() => setCompareList([])} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
             <X size={14} />
           </button>
         </div>
@@ -484,20 +468,13 @@ const MarketPage = () => {
 
       {/* Compare Modal */}
       {showCompare && comparePrices.length >= 2 && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem',
-        }} onClick={() => setShowCompare(false)}>
-          <div style={{
-            background: '#fff', borderRadius: '1.5rem', padding: '1.5rem',
-            maxWidth: '700px', width: '100%', maxHeight: '80vh', overflowY: 'auto',
-            animation: 'fadeIn 0.3s ease',
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.1rem', fontWeight: '700', color: '#111827' }}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000] p-4" onClick={() => setShowCompare(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-[700px] w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-gray-700 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 📊 Price Comparison
               </h3>
-              <button onClick={() => setShowCompare(false)} style={{ background: '#f3f4f6', border: 'none', borderRadius: '0.5rem', padding: '0.4rem', cursor: 'pointer' }}>
+              <button onClick={() => setShowCompare(false)} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                 <X size={16} />
               </button>
             </div>
@@ -531,238 +508,150 @@ const MarketPage = () => {
         </div>
       )}
 
-      {/* Sticky top bar - exact match to KrishiConnect Home top bar */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 30,
-        background: 'rgba(255, 255, 255, 0.92)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid #e8edf2',
-        display: 'flex', alignItems: 'center', gap: 14,
-        padding: '0 24px', height: 64,
-        boxShadow: '0 1px 0 rgb(0 0 0 / 0.04)',
-      }}>
-        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#166534' }}>📈 Market</span>
-        <div style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
-          <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            placeholder="Search crops, markets, states..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', paddingLeft: 40, paddingRight: 16, paddingTop: 9, paddingBottom: 9,
-              fontSize: 13, background: '#f8fafc', border: '1.5px solid #e8edf2', borderRadius: 99,
-              fontFamily: "'DM Sans', sans-serif", color: '#1e293b', outline: 'none',
-            }}
-          />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
-          <button
-            onClick={() => loadData(true)}
-            disabled={refreshing || loading}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px',
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: 'white',
-              borderRadius: 11, fontSize: 13, fontWeight: 700,
-              boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)', border: 'none', cursor: 'pointer',
-              opacity: (refreshing || loading) ? 0.7 : 1, transition: 'all 0.15s ease',
-            }}
-          >
-            <RefreshCw size={16} style={{ flexShrink: 0 }} />
-            {refreshing ? 'Refreshing...' : 'Refresh Prices'}
-          </button>
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '24px 20px 4rem' }}>
-
-        {/* ── GAINERS & LOSERS STRIP ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-          {/* Gainers */}
-          <div style={{
-            background: '#fff', borderRadius: '1.25rem', padding: '1.1rem 1.25rem',
-            border: '1.5px solid #e5e7eb', animation: 'fadeIn 0.4s ease',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-              <TrendingUp size={16} style={{ color: '#16a34a' }} />
-              <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#111827', fontFamily: "'Lora', Georgia, serif" }}>Top Gainers</h3>
+      {/* Header - same pattern as NetworkPage, AlertsPage */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-20 shadow-sm transition-colors duration-200">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <TrendingUp size={22} className="text-green-600 dark:text-green-400" /> Market
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Live mandi prices, trends & news</p>
             </div>
-            {loading ? [...Array(3)].map((_, i) => <SkeletonBlock key={i} h="52px" rounded="0.75rem" />) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {gainers.map(g => <GainerLoserCard key={g.id} item={g} type="gainer" />)}
-              </div>
-            )}
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing || loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-70 transition shadow-sm"
+            >
+              <RefreshCw size={16} className={refreshing || loading ? 'animate-spin' : ''} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
           </div>
 
-          {/* Losers */}
-          <div style={{
-            background: '#fff', borderRadius: '1.25rem', padding: '1.1rem 1.25rem',
-            border: '1.5px solid #e5e7eb', animation: 'fadeIn 0.4s ease 0.1s both',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-              <TrendingDown size={16} style={{ color: '#dc2626' }} />
-              <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#111827', fontFamily: "'Lora', Georgia, serif" }}>Top Losers</h3>
-            </div>
-            {loading ? [...Array(3)].map((_, i) => <SkeletonBlock key={i} h="52px" rounded="0.75rem" />) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {losers.map(l => <GainerLoserCard key={l.id} item={l} type="loser" />)}
-              </div>
-            )}
+          {/* Search */}
+          <div className="relative">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Search crops, markets, states..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 focus:bg-white dark:focus:bg-gray-600 transition placeholder-gray-500 dark:placeholder-gray-400"
+            />
           </div>
-        </div>
 
-        {/* ── SEARCH & FILTERS ── */}
-        <div style={{
-          background: '#fff', borderRadius: '1.25rem', padding: '1rem 1.25rem',
-          border: '1.5px solid #e5e7eb', marginBottom: '1.25rem',
-          animation: 'fadeIn 0.4s ease 0.15s both',
-        }}>
-          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
-              <Search size={15} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-              <input
-                type="text"
-                placeholder="Search crop, market, or state..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%', padding: '0.65rem 1rem 0.65rem 2.4rem',
-                  border: '1.5px solid #e5e7eb', borderRadius: '0.65rem',
-                  fontSize: '0.875rem', background: '#f9fafb', outline: 'none',
-                  fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s',
-                }}
-                onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.background = '#fff'; }}
-                onBlur={e => { e.target.style.borderColor = '#e5e7eb'; e.target.style.background = '#f9fafb'; }}
-              />
-            </div>
-
+          {/* Filters toggle */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.65rem 1rem', border: '1.5px solid #e5e7eb',
-                borderRadius: '0.65rem', background: showFilters ? '#f0fdf4' : '#fff',
-                borderColor: showFilters ? '#bbf7d0' : '#e5e7eb',
-                cursor: 'pointer', fontSize: '0.82rem', fontWeight: '600', color: '#374151',
-                position: 'relative',
-              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition ${showFilters ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
             >
-              <SlidersHorizontal size={14} />
-              Filters
+              <SlidersHorizontal size={15} /> Filters
               {activeFilterCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: '-6px', right: '-6px',
-                  background: '#10b981', color: '#fff', fontSize: '0.65rem',
-                  fontWeight: '700', width: '18px', height: '18px', borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>{activeFilterCount}</span>
+                <span className="px-1.5 py-0.5 text-xs font-bold bg-green-600 text-white rounded-full">{activeFilterCount}</span>
               )}
             </button>
-
             {(searchQuery || activeFilterCount > 0) && (
-              <button onClick={clearFilters} style={{
-                display: 'flex', alignItems: 'center', gap: '0.3rem',
-                padding: '0.65rem 0.875rem', border: '1.5px solid #fecaca',
-                borderRadius: '0.65rem', background: '#fef2f2',
-                cursor: 'pointer', fontSize: '0.82rem', fontWeight: '600', color: '#dc2626',
-              }}>
-                <X size={13} /> Clear
+              <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800 transition">
+                <X size={14} /> Clear
               </button>
             )}
           </div>
 
-          {/* Filter Dropdowns */}
+          {/* Filter dropdowns (in header when expanded) */}
           {showFilters && (
-            <div style={{
-              display: 'flex', gap: '0.75rem', marginTop: '0.875rem', flexWrap: 'wrap',
-              padding: '0.875rem', background: '#f9fafb', borderRadius: '0.75rem',
-              border: '1.5px solid #e5e7eb',
-            }}>
+            <div className="mt-3 flex flex-wrap gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
               {[
                 { label: 'Crop', value: selectedCrop, setter: setSelectedCrop, options: ['All', ...ALL_CROPS] },
                 { label: 'State', value: selectedState, setter: setSelectedState, options: ['All', ...ALL_STATES] },
                 { label: 'Market Type', value: selectedMarketType, setter: setSelectedMarketType, options: ['All', ...MARKET_TYPES] },
               ].map(({ label, value, setter, options }) => (
-                <div key={label} style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ fontSize: '0.7rem', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.3rem' }}>
-                    {label}
-                  </label>
+                <div key={label} className="flex-1 min-w-[140px]">
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">{label}</label>
                   <select
                     value={value}
                     onChange={e => setter(e.target.value)}
-                    style={{
-                      width: '100%', padding: '0.55rem 0.75rem',
-                      border: '1.5px solid #e5e7eb', borderRadius: '0.55rem',
-                      fontSize: '0.82rem', background: '#fff', cursor: 'pointer',
-                      fontFamily: "'DM Sans', sans-serif", color: '#374151', outline: 'none',
-                    }}
+                    className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600"
                   >
                     {options.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
               ))}
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button onClick={applyFilters} style={{
-                  padding: '0.55rem 1.1rem', background: '#065f46', color: '#fff',
-                  border: 'none', borderRadius: '0.55rem', cursor: 'pointer',
-                  fontSize: '0.82rem', fontWeight: '600', fontFamily: "'DM Sans', sans-serif",
-                }}>
+              <div className="flex items-end">
+                <button onClick={applyFilters} className="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition">
                   Apply
                 </button>
               </div>
             </div>
           )}
         </div>
+      </div>
 
-        {/* ── SECTION TABS ── */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+      <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
+
+        {/* Gainers & Losers - same card style as other pages */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm transition-colors duration-200">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={18} className="text-green-600 dark:text-green-400" />
+              <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Top Gainers</h3>
+            </div>
+            {loading ? [...Array(3)].map((_, i) => <SkeletonBlock key={i} h="52px" rounded="0.75rem" />) : (
+              <div className="flex flex-col gap-2">
+                {gainers.map(g => <GainerLoserCard key={g.id} item={g} type="gainer" />)}
+              </div>
+            )}
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm transition-colors duration-200">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingDown size={18} className="text-red-500 dark:text-red-400" />
+              <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Top Losers</h3>
+            </div>
+            {loading ? [...Array(3)].map((_, i) => <SkeletonBlock key={i} h="52px" rounded="0.75rem" />) : (
+              <div className="flex flex-col gap-2">
+                {losers.map(l => <GainerLoserCard key={l.id} item={l} type="loser" />)}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Section Tabs */}
+        <div className="flex gap-2 mb-5 flex-wrap">
           {[
             { id: 'prices', label: '💰 Price Table' },
             { id: 'trends', label: '📈 Price Trends' },
             { id: 'news', label: '📰 Market News' },
             { id: 'watchlist', label: `⭐ Watchlist (${watchlist.length})` },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              padding: '0.55rem 1.1rem', borderRadius: '0.75rem', cursor: 'pointer',
-              background: activeTab === tab.id ? '#065f46' : '#fff',
-              color: activeTab === tab.id ? '#fff' : '#374151',
-              fontSize: '0.82rem', fontWeight: '600',
-              border: `1.5px solid ${activeTab === tab.id ? 'transparent' : '#e5e7eb'}`,
-              transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif",
-            }}>
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-semibold rounded-xl transition ${activeTab === tab.id ? 'bg-green-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* ── ERROR ── */}
+        {/* Error */}
         {error && (
-          <div style={{
-            background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '1rem',
-            padding: '1.5rem', textAlign: 'center', marginBottom: '1.25rem',
-          }}>
-            <AlertCircle size={28} style={{ color: '#dc2626', margin: '0 auto 0.5rem' }} />
-            <p style={{ color: '#991b1b', fontWeight: '600' }}>{error}</p>
-            <button onClick={() => loadData()} style={{
-              marginTop: '0.75rem', padding: '0.5rem 1.25rem',
-              background: '#dc2626', color: '#fff', border: 'none',
-              borderRadius: '0.6rem', cursor: 'pointer', fontWeight: '600',
-            }}>Retry</button>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-2xl p-6 text-center mb-6">
+            <AlertCircle size={28} className="text-red-500 mx-auto mb-2" />
+            <p className="text-red-700 dark:text-red-300 font-semibold">{error}</p>
+            <button onClick={() => loadData()} className="mt-3 px-5 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition">
+              Retry
+            </button>
           </div>
         )}
 
-        {/* ── PRICE TABLE TAB ── */}
+        {/* Price Table Tab */}
         {activeTab === 'prices' && (
-          <div style={{
-            background: '#fff', borderRadius: '1.25rem',
-            border: '1.5px solid #e5e7eb', overflow: 'hidden',
-            animation: 'fadeIn 0.4s ease',
-          }}>
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1.5px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '0.95rem', fontWeight: '700', color: '#111827' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200">
+            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
+              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
                 Commodity Price Board
               </h3>
-              <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 {filteredPrices.length} records · Click ⊕ to compare (max 3)
               </span>
             </div>
