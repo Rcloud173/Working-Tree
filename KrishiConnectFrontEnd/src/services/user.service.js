@@ -1,0 +1,125 @@
+/**
+ * User & profile API. Backend: GET/PATCH /users/me, GET /users/:userId, follow, avatar, background.
+ */
+import { request } from './api';
+
+const BACKGROUND_PRESET_COLORS = {
+  default: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+  gradient_teal: 'linear-gradient(135deg, #16a34a 0%, #6ee7b7 100%)',
+  gradient_blue: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)',
+  gradient_purple: 'linear-gradient(135deg, #9333ea 0%, #db2777 100%)',
+  gradient_orange: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+  gradient_dark: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
+  solid_green: '#16a34a',
+  custom: null,
+};
+
+const DEFAULT_PROFILE_PHOTO = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop';
+
+/**
+ * Map backend user to profile page shape.
+ * @param {object} raw - Backend user (profilePhoto: { url }, avatar: { url }, background: { url }, stats, etc.)
+ * @param {string|null} currentUserId - Logged-in user id for isOwnProfile
+ */
+export function mapUserToProfile(raw, currentUserId) {
+  if (!raw) return null;
+  const locationParts = [raw.location?.state, raw.location?.district, raw.location?.village].filter(Boolean);
+  const locationStr = locationParts.length ? locationParts.join(', ') : null;
+  const joinedDate = raw.createdAt
+    ? new Date(raw.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : null;
+  const coverPhoto =
+    raw.background?.url ||
+    (raw.backgroundPreset && BACKGROUND_PRESET_COLORS[raw.backgroundPreset]) ||
+    'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1200&h=400&fit=crop';
+  const profilePhotoUrl =
+    raw.profilePhoto?.url || raw.avatar?.url || DEFAULT_PROFILE_PHOTO;
+  const stats = raw.stats || {};
+  const crops = Array.isArray(raw.crops) ? raw.crops.map((c) => c.charAt(0).toUpperCase() + c.slice(1)) : [];
+
+  return {
+    _id: raw._id,
+    name: raw.name || 'User',
+    profilePhoto: profilePhotoUrl,
+    coverPhoto: typeof coverPhoto === 'string' && coverPhoto.startsWith('linear-gradient') ? undefined : coverPhoto,
+    coverPreset: typeof coverPhoto === 'string' && coverPhoto.startsWith('linear') ? coverPhoto : null,
+    headline: raw.bio ? raw.bio.split('\n')[0].slice(0, 80) : '',
+    location: locationStr,
+    bio: raw.bio || '',
+    followersCount: stats.followersCount ?? 0,
+    followingCount: stats.followingCount ?? 0,
+    postsCount: stats.postsCount ?? 0,
+    savedCount: 0,
+    verified: raw.verificationStatus === 'verified' || raw.isExpert === true,
+    profileViewers: 0,
+    postImpressions: 0,
+    education: '',
+    experience: '',
+    website: '',
+    phone: raw.phoneNumber ? `+91 ${raw.phoneNumber}` : '',
+    joinedDate,
+    crops,
+    certifications: raw.expertDetails?.qualifications || [],
+    languages: Array.isArray(raw.languages) ? raw.languages.map((l) => l.charAt(0).toUpperCase() + l.slice(1)) : [],
+    isOwnProfile: currentUserId ? String(raw._id) === String(currentUserId) : false,
+    isFollowing: !!raw.isFollowing,
+  };
+}
+
+export const userService = {
+  /** GET current user profile (requires auth) */
+  async getMe() {
+    const { data } = await request('GET', '/users/me');
+    return data.data;
+  },
+
+  /** GET user by id (optional auth for isFollowing) */
+  async getProfile(userId) {
+    const { data } = await request('GET', `/users/${userId}`);
+    return data.data;
+  },
+
+  /**
+   * Fetch profile for profile page. Use 'me' or current user id for own profile.
+   * @param {string} userId - 'me', 'current-user', or actual id
+   * @param {string|null} currentUserId - logged-in user id
+   */
+  async fetchProfileForPage(userId, currentUserId) {
+    const isOwn = !userId || userId === 'current-user' || userId === 'me' || (currentUserId && String(userId) === String(currentUserId));
+    const raw = isOwn
+      ? await this.getMe()
+      : await this.getProfile(userId);
+    return mapUserToProfile(raw, currentUserId);
+  },
+
+  /** PATCH update profile (allowed: name, bio, location, farmSize, crops, languages, preferences) */
+  async updateProfile(payload) {
+    const { data } = await request('PATCH', '/users/me', payload);
+    return data.data;
+  },
+
+  /** POST profile photo. FormData field must be "profilePhoto" to match backend multer .single('profilePhoto'). */
+  async uploadProfilePhoto(file) {
+    const form = new FormData();
+    form.append('profilePhoto', file);
+    const { data } = await request('POST', '/users/profile-photo', form, { body: form });
+    return data.data;
+  },
+
+  /** POST cover/background: either preset or image. Preset: { preset: 'gradient_teal' }. Image: FormData with 'background' */
+  async updateBackground(presetOrFormData) {
+    const isForm = presetOrFormData instanceof FormData;
+    const { data } = await request('POST', '/users/me/background', isForm ? undefined : presetOrFormData, isForm ? { body: presetOrFormData } : {});
+    return data.data;
+  },
+
+  async followUser(userId) {
+    await request('POST', `/users/${userId}/follow`);
+    return { success: true };
+  },
+
+  async unfollowUser(userId) {
+    await request('DELETE', `/users/${userId}/follow`);
+    return { success: true };
+  },
+};
