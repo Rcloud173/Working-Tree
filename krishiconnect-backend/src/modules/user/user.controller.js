@@ -1,4 +1,6 @@
 const userService = require('./user.service');
+const postService = require('../post/post.service');
+const chatService = require('../chat/chat.service');
 const ApiResponse = require('../../utils/ApiResponse');
 const ApiError = require('../../utils/ApiError');
 const asyncHandler = require('../../utils/asyncHandler');
@@ -8,9 +10,33 @@ const getMe = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, user, 'Profile fetched successfully'));
 });
 
+/**
+ * GET my saved posts only. Requires auth. Never exposes another user's saved posts.
+ * Uses req.user identity only; no :userId param accepted.
+ */
+const getMySavedPosts = asyncHandler(async (req, res) => {
+  const userId = req.user?._id ?? req.user?.id;
+  if (!userId) {
+    throw new ApiError(401, 'Authentication required');
+  }
+  const result = await postService.getSavedPosts(userId, req.query);
+  res.status(200).json(
+    new ApiResponse(200, result.data, 'Saved posts', { pagination: result.pagination })
+  );
+});
+
 const updateMe = asyncHandler(async (req, res) => {
   const user = await userService.updateProfile(req.user._id, req.body);
   res.status(200).json(new ApiResponse(200, user, 'Profile updated successfully'));
+});
+
+const updateLanguage = asyncHandler(async (req, res) => {
+  const { language } = req.body;
+  if (!language || typeof language !== 'string') {
+    throw new ApiError(400, 'Language is required');
+  }
+  const user = await userService.updateLanguagePreference(req.user._id, language.trim());
+  res.status(200).json(new ApiResponse(200, user, 'Language preference updated'));
 });
 
 const uploadAvatar = asyncHandler(async (req, res) => {
@@ -39,6 +65,22 @@ const updateBio = asyncHandler(async (req, res) => {
 const clearBio = asyncHandler(async (req, res) => {
   const user = await userService.clearBio(req.user._id);
   res.status(200).json(new ApiResponse(200, user, 'Bio cleared'));
+});
+
+const updatePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user?.id ?? req.user?._id;
+  if (!userId) {
+    throw new ApiError(401, 'Authentication required');
+  }
+  if (!currentPassword || typeof currentPassword !== 'string') {
+    throw new ApiError(400, 'Current password is required');
+  }
+  if (!newPassword || typeof newPassword !== 'string') {
+    throw new ApiError(400, 'New password is required');
+  }
+  await userService.updatePassword(userId, currentPassword, newPassword);
+  res.status(200).json(new ApiResponse(200, { success: true }, 'Password updated successfully'));
 });
 
 const updateBackground = asyncHandler(async (req, res) => {
@@ -80,6 +122,22 @@ const unfollowUser = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { success: true }, 'User unfollowed successfully'));
 });
 
+/**
+ * Public posts by user (author: userId). Does NOT include saved posts.
+ */
+const getPublicUserPosts = asyncHandler(async (req, res) => {
+  const result = await postService.getUserPosts(req.params.userId, req.query);
+  res.status(200).json(
+    new ApiResponse(200, result.data, 'User posts', { pagination: result.pagination })
+  );
+});
+
+/** GET /users/:userId/can-chat — true if current user can start chat with userId (follow relation). */
+const getCanChat = asyncHandler(async (req, res) => {
+  const canChat = await chatService.canChatWith(req.user._id, req.params.userId);
+  res.status(200).json(new ApiResponse(200, { canChat }, 'OK'));
+});
+
 const getFollowers = asyncHandler(async (req, res) => {
   const result = await userService.getFollowers(req.params.userId, req.query);
   res.status(200).json(
@@ -101,14 +159,19 @@ const getFollowing = asyncHandler(async (req, res) => {
 module.exports = {
   getMe,
   updateMe,
+  getMySavedPosts,
+  updateLanguage,
   uploadAvatar,
   removeAvatar,
   uploadProfilePhoto,
   updateBio,
   clearBio,
+  updatePassword,
   updateBackground,
   getBackgroundPresets,
   getUserById,
+  getPublicUserPosts,
+  getCanChat,
   searchUsers,
   followUser,
   unfollowUser,

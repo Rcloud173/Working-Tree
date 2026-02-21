@@ -6,6 +6,7 @@ const ApiError = require('../../utils/ApiError');
 const { OTP_EXPIRY_SECONDS, OTP_MAX_ATTEMPTS } = require('../../config/constants');
 const { getRedis } = require('../../config/redis');
 const otpService = require('../../services/otpService');
+const logger = require('../../config/logger');
 
 // In-memory fallback for development when Redis unavailable
 const memoryStore = new Map();
@@ -59,60 +60,98 @@ class AuthService {
   }
 
   async register(userData) {
-    const { phoneNumber, email, password, name, location } = userData;
-    const normalizedEmail = email?.trim().toLowerCase() || null;
-
-    const existingByPhone = await User.findOne({ phoneNumber });
-    if (existingByPhone) {
-      throw new ApiError(409, 'Phone number already registered');
+    if (!userData || typeof userData !== 'object') {
+      throw new ApiError(400, 'Invalid registration data');
     }
-    if (normalizedEmail) {
-      const existingByEmail = await User.findOne({ email: normalizedEmail });
-      if (existingByEmail) {
-        throw new ApiError(409, 'Email already registered');
+
+    const rawPhone = userData.phoneNumber != null ? String(userData.phoneNumber).trim() : '';
+    const phoneNumber = rawPhone.replace(/\D/g, '').slice(-10);
+    const email = userData.email != null ? String(userData.email).trim() : '';
+    const normalizedEmail = email ? email.toLowerCase() : null;
+    const name = userData.name != null ? String(userData.name).trim() : '';
+    const password = userData.password;
+    const location = userData.location && typeof userData.location === 'object' ? userData.location : {};
+
+    if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
+      throw new ApiError(400, 'Valid phone number is required (10 digits, starting with 6-9)');
+    }
+    if (!name || name.length > 100) {
+      throw new ApiError(400, 'Name is required (max 100 characters)');
+    }
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      throw new ApiError(400, 'Password is required and must be at least 6 characters');
+    }
+
+    try {
+      const existingByPhone = await User.findOne({ phoneNumber });
+      if (existingByPhone) {
+        throw new ApiError(409, 'Phone number already registered');
       }
-    }
-
-    // Email OTP flow: create user, send OTP via Nodemailer, return otpId
-    if (normalizedEmail) {
-      const user = await User.create({
-        phoneNumber,
-        email: normalizedEmail,
-        name,
-        password,
-        location: location || {},
-        emailVerified: false,
-        verificationStatus: 'unverified',
-      });
-      const result = await otpService.generateAndSendOTP(
-        user._id,
-        normalizedEmail,
-        'registration',
-        name
-      );
-      if (!result.success) {
-        await User.findByIdAndDelete(user._id);
-        throw new ApiError(500, result.message || 'Failed to send verification email');
+      if (normalizedEmail) {
+        const existingByEmail = await User.findOne({ email: normalizedEmail });
+        if (existingByEmail) {
+          throw new ApiError(409, 'Email already registered');
+        }
       }
-      return {
-        otpSent: true, 
-        otpId: result.otpId,
-        expiresIn: result.expiresIn,
-        email: normalizedEmail,
-      };
-    }
 
-    // Phone OTP flow (existing)
-    await this.generateOTP(phoneNumber);
-    const userPayload = JSON.stringify({ password, name, location });
-    const redis = getRedis();
-    if (redis) {
-      await redis.set(`temp:user:${phoneNumber}`, userPayload, { EX: 3600 });
-    } else if (process.env.NODE_ENV === 'development') {
-      memoryStore.set(`temp:user:${phoneNumber}`, userPayload);
-      setTimeout(() => memoryStore.delete(`temp:user:${phoneNumber}`), 3600 * 1000);
+      // Email OTP flow: create user (password hashed by User pre-save), send OTP, return otpId
+      if (normalizedEmail) {
+        const user = await User.create({
+          phoneNumber,
+          username: `user_${phoneNumber}`,
+          email: normalizedEmail,
+          name,
+          password,
+          location: location || {},
+          emailVerified: false,
+          verificationStatus: 'unverified',
+        });
+        const result = await otpService.generateAndSendOTP(
+          user._id,
+          normalizedEmail,
+          'registration',
+          name
+        );
+        if (!result.success) {
+          await User.findByIdAndDelete(user._id);
+          throw new ApiError(500, result.message || 'Failed to send verification email');
+        }
+        return {
+          otpSent: true,
+          otpId: result.otpId,
+          expiresIn: result.expiresIn,
+          email: normalizedEmail,
+        };
+      }
+
+      // Phone OTP flow
+      await this.generateOTP(phoneNumber);
+      const userPayload = JSON.stringify({ password, name, location });
+      const redis = getRedis();
+      if (redis) {
+        await redis.set(`temp:user:${phoneNumber}`, userPayload, { EX: 3600 });
+      } else if (process.env.NODE_ENV === 'development') {
+        memoryStore.set(`temp:user:${phoneNumber}`, userPayload);
+        setTimeout(() => memoryStore.delete(`temp:user:${phoneNumber}`), 3600 * 1000);
+      }
+      return { otpSent: true, phoneNumber };
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      logger.error('[auth.register]', err);
+      if (err.name === 'MongoServerError' && err.code === 11000) {
+        const msg = err.message || '';
+        if (msg.includes('username')) {
+          throw new ApiError(409, 'Phone number or email already registered');
+        }
+        const field = msg.includes('email') ? 'Email' : 'Phone number';
+        throw new ApiError(409, `${field} already registered`);
+      }
+      if (err.name === 'ValidationError') {
+        const msg = Object.values(err.errors || {}).map((e) => e.message).join('; ') || err.message;
+        throw new ApiError(400, msg);
+      }
+      throw new ApiError(500, 'Registration failed. Please try again.');
     }
-    return { otpSent: true, phoneNumber };
   }
 
   async completeRegistrationWithEmail(otpId, otp) {
@@ -157,6 +196,7 @@ class AuthService {
     const userData = typeof tempData === 'string' ? JSON.parse(tempData) : tempData;
     const user = await User.create({
       phoneNumber,
+      username: `user_${phoneNumber}`,
       ...userData,
     });
 

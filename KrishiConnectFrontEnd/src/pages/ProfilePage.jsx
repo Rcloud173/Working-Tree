@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/authStore';
 import { authStore } from '../store/authStore';
 import { userService, mapUserToProfile } from '../services/user.service';
 import { postService } from '../services/post.service';
+import { chatService } from '../services/chat.service';
 
 // ============================================================================
 // UTILITY
@@ -173,6 +174,8 @@ const ProfilePage = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [canChat, setCanChat] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [shareToast, setShareToast] = useState(false);
   const [showMoreInfo, setShowMoreInfo] = useState(false);
   const profilePhotoInputRef = useRef(null);
@@ -186,6 +189,17 @@ const ProfilePage = () => {
       const profile = await userService.fetchProfileForPage(idForApi, currentUserId);
       setUser(profile);
       setFollowing(profile?.isFollowing ?? false);
+      const isOtherUser = profile?._id && currentUserId && String(profile._id) !== String(currentUserId);
+      if (isOtherUser) {
+        try {
+          const res = await chatService.getCanChat(profile._id);
+          setCanChat(!!res?.canChat);
+        } catch {
+          setCanChat(false);
+        }
+      } else {
+        setCanChat(false);
+      }
     } catch (err) {
       const isUnauthorized = err?.response?.status === 401;
       if (isUnauthorized && isOwnProfile) {
@@ -204,7 +218,17 @@ const ProfilePage = () => {
     loadProfile();
   }, [loadProfile]);
 
+  const isOwnProfile = Boolean(currentUserId && user && String(user._id) === String(currentUserId));
   const userIdForPosts = user?._id;
+
+  // When viewing another user's profile, only show public posts — never fetch or show saved tab
+  useEffect(() => {
+    if (!isOwnProfile) {
+      if (activeTab === 'saved') setActiveTab('posts');
+      setSavedPosts([]);
+    }
+  }, [isOwnProfile, activeTab]);
+
   useEffect(() => {
     if (!userIdForPosts) return;
     let cancelled = false;
@@ -214,22 +238,40 @@ const ProfilePage = () => {
         if (activeTab === 'posts') {
           const { posts: data } = await postService.getUserPosts(userIdForPosts);
           if (!cancelled) setPosts(data || []);
-        } else {
+        } else if (activeTab === 'saved' && isOwnProfile) {
           const { posts: data } = await postService.getSavedPosts();
           if (!cancelled) setSavedPosts(data || []);
         }
-    } catch (err) {
-      if (!cancelled) {
-        setPosts([]);
-        setSavedPosts([]);
-        if (err?.response?.status !== 401) toast.error(err?.message || 'Failed to load posts');
-      }
-    } finally {
+      } catch (err) {
+        if (!cancelled) {
+          setPosts([]);
+          setSavedPosts([]);
+          if (err?.response?.status !== 401) toast.error(err?.message || 'Failed to load posts');
+        }
+      } finally {
         if (!cancelled) setPostsLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [activeTab, userIdForPosts]);
+  }, [activeTab, userIdForPosts, isOwnProfile]);
+
+  const handleChat = async () => {
+    if (!user || !currentUserId) return;
+    setChatLoading(true);
+    try {
+      const conversation = await chatService.startConversation(user._id);
+      const convId = conversation?._id;
+      if (convId) {
+        navigate('/messages', { state: { openConversationId: convId, openConversation: conversation } });
+      } else {
+        toast.error('Could not start conversation');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Could not start chat');
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   const handleFollow = async () => {
     if (!user) return;
@@ -393,11 +435,20 @@ const ProfilePage = () => {
                     <Edit3 size={13} /> Edit Profile
                   </button>
                 ) : (
-                  <button onClick={handleFollow} disabled={followLoading}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${following ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'}`}>
-                    {followLoading ? <Loader size={13} className="animate-spin" /> : following ? <Check size={13} /> : <Plus size={13} />}
-                    {following ? 'Following' : 'Follow'}
-                  </button>
+                  <>
+                    <button onClick={handleFollow} disabled={followLoading}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${following ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'}`}>
+                      {followLoading ? <Loader size={13} className="animate-spin" /> : following ? <Check size={13} /> : <Plus size={13} />}
+                      {following ? 'Following' : 'Follow'}
+                    </button>
+                    {canChat && (
+                      <button onClick={handleChat} disabled={chatLoading}
+                        className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 shadow-sm transition flex items-center gap-1.5">
+                        {chatLoading ? <Loader size={13} className="animate-spin" /> : <MessageSquare size={13} />}
+                        Chat
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -521,8 +572,8 @@ const ProfilePage = () => {
         <div className="bg-white rounded-t-none mt-4 shadow-sm">
           <div className="flex border-b border-gray-100 px-4 sticky top-0 bg-white z-10">
             {[
-              { id: 'posts', label: `Posts (${user.postsCount})` },
-              { id: 'saved', label: `Saved (${user.savedCount})` },
+              { id: 'posts', label: `Posts (${user.postsCount ?? 0})` },
+              ...(isOwnProfile ? [{ id: 'saved', label: `Saved (${user.savedCount ?? 0})` }] : []),
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`px-5 py-3.5 text-sm font-bold border-b-2 transition mr-1 ${activeTab === tab.id ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>

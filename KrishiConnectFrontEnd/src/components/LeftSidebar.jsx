@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, Users, Briefcase, MessageSquare, Bell, User, Settings, Menu, ChevronDown, ChevronUp, LogIn, CloudRain, BarChart2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -7,6 +8,7 @@ import { useAuthStore } from '../store/authStore';
 // LEFT SIDEBAR COMPONENT
 // ============================================================================
 const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
@@ -16,14 +18,14 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
     (user?.avatar && (typeof user.avatar === 'string' ? user.avatar : user.avatar?.url));
 
   const navItems = [
-    { id: 'home', icon: Home, label: 'Home', route: '/' },
-    { id: 'network', icon: Users, label: 'Network', route: '/network' },
-    { id: 'jobs', icon: Briefcase, label: 'Opportunities', badge: 'New', route: '/opportunities' },
-    { id: 'messages', icon: MessageSquare, label: 'Messages', route: '/messages' },
-    { id: 'notifications', icon: Bell, label: 'Alerts', badge: notificationCount > 0 ? notificationCount : null, route: '/alerts' },
-    { id: 'weather', icon: CloudRain, label: 'Weather', route: '/weather' },
-    { id: 'market', icon: BarChart2, label: 'Market', route: '/market' },
-    { id: 'profile', icon: User, label: 'Profile', route: '/profile' },
+    { id: 'home', icon: Home, labelKey: 'nav.home', route: '/' },
+    { id: 'network', icon: Users, labelKey: 'nav.network', route: '/network' },
+    { id: 'jobs', icon: Briefcase, labelKey: 'nav.opportunities', badge: 'New', route: '/opportunities' },
+    { id: 'messages', icon: MessageSquare, labelKey: 'nav.messages', route: '/messages' },
+    { id: 'notifications', icon: Bell, labelKey: 'nav.alerts', badge: notificationCount > 0 ? notificationCount : null, route: '/alerts' },
+    { id: 'weather', icon: CloudRain, labelKey: 'nav.weather', route: '/weather' },
+    { id: 'market', icon: BarChart2, labelKey: 'nav.market', route: '/market' },
+    { id: 'profile', icon: User, labelKey: 'nav.profile', route: '/profile' },
   ];
 
   // Determine active nav based on current route
@@ -74,10 +76,10 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
                   ? 'bg-green-50 text-green-700 font-bold'
                   : 'text-gray-600 hover:bg-gray-50'
               } ${!open ? 'justify-center' : ''}`}
-              title={!open ? item.label : ''}
+              title={!open ? t(item.labelKey) : ''}
             >
               <item.icon size={19} className="flex-shrink-0" />
-              {open && <span className="text-sm flex-1 text-left">{item.label}</span>}
+              {open && <span className="text-sm flex-1 text-left">{t(item.labelKey)}</span>}
               {open && item.badge && (
                 <span className={`text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ${
                   item.badge === 'New' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'
@@ -99,7 +101,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition ${!open ? 'justify-center' : ''}`}
           >
             <Settings size={19} />
-            {open && <span className="text-sm">Settings</span>}
+            {open && <span className="text-sm">{t('nav.settings')}</span>}
           </button>
           {isLoggedIn ? (
             <button
@@ -113,7 +115,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
                   <User size={14} className="text-emerald-600" />
                 </div>
               )}
-              {open && <span className="text-sm font-medium truncate">{user?.name || 'Profile'}</span>}
+              {open && <span className="text-sm font-medium truncate">{user?.name || t('nav.profile')}</span>}
             </button>
           ) : (
             <Link
@@ -121,7 +123,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition ${!open ? 'justify-center' : ''}`}
             >
               <LogIn size={19} />
-              {open && <span className="text-sm font-medium">Log in</span>}
+              {open && <span className="text-sm font-medium">{t('nav.login')}</span>}
             </Link>
           )}
         </div>

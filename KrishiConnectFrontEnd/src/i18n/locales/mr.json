@@ -1,0 +1,61 @@
+{
+  "common": {
+    "save": "जतन करा",
+    "cancel": "रद्द",
+    "loading": "लोड होत आहे...",
+    "error": "त्रुटी",
+    "success": "यश"
+  },
+  "nav": {
+    "home": "मुख्यपृष्ठ",
+    "network": "नेटवर्क",
+    "opportunities": "संधी",
+    "messages": "संदेश",
+    "alerts": "अलर्ट",
+    "weather": "हवामान",
+    "market": "बाजार",
+    "profile": "प्रोफाइल",
+    "settings": "सेटिंग्स",
+    "login": "लॉग इन",
+    "logout": "लॉग आउट"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "profile": "प्रोफाइल",
+    "account": "खाते",
+    "notifications": "सूचना",
+    "privacy": "गोपनीयता आणि सुरक्षा",
+    "preferences": "प्राधान्ये",
+    "dangerZone": "धोका क्षेत्र",
+    "preferencesSubtitle": "तुमचा KrishiConnect अनुभव सानुकूलित करा",
+    "theme": "थीम",
+    "themeLight": "हलका",
+    "themeDark": "डार्क",
+    "language": "भाषा",
+    "location": "स्थान",
+    "locationPlaceholder": "शहर, राज्य",
+    "locationHint": "स्थानिक हवामान आणि बाजार किंमत अलर्टसाठी वापरले",
+    "savePreferences": "प्राधान्ये जतन करा",
+    "saving": "जतन होत आहे...",
+    "preferencesSaved": "प्राधान्ये जतन झाली!",
+    "preferencesSaveFailed": "प्राधान्ये जतन करण्यात अयशस्वी",
+    "darkModeHint": "तुमचा बॅकएंड प्राधान्य अपडेट केल्यावर डार्क मोड ग्लोबल लागू होईल"
+  },
+  "profile": {
+    "title": "प्रोफाइल",
+    "posts": "पोस्ट",
+    "saved": "जतन केलेले",
+    "followers": "फॉलोअर्स",
+    "following": "फॉलोइंग",
+    "editProfile": "प्रोफाइल संपादित करा",
+    "noPosts": "अद्याप पोस्ट नाहीत",
+    "noPostsHint": "तुमचे शेती अनुभव शेअर करा!",
+    "noSavedPosts": "जतन केलेले पोस्ट नाहीत",
+    "noSavedPostsHint": "त्यांना येथे पाहण्यासाठी पोस्ट बुकमार्क करा"
+  },
+  "home": {
+    "title": "फीड",
+    "sharePlaceholder": "तुमचे शेती टिप्स शेअर करा...",
+    "post": "पोस्ट"
+  }
+}

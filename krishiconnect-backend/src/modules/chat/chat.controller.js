@@ -14,6 +14,15 @@ const createConversation = asyncHandler(async (req, res) => {
   );
 });
 
+/** POST /conversations/start — body: { otherUserId }. Get or create direct conversation. Enforces can-chat. */
+const startConversation = asyncHandler(async (req, res) => {
+  const { otherUserId } = req.body;
+  const conversation = await chatService.startConversation(req.user._id, otherUserId);
+  res.status(200).json(
+    new ApiResponse(200, conversation, conversation.createdAt.getTime() > Date.now() - 5000 ? 'Conversation created' : 'Conversation found')
+  );
+});
+
 const getConversations = asyncHandler(async (req, res) => {
   const result = await chatService.getConversations(req.user._id, req.query);
   res.status(200).json(
@@ -38,6 +47,7 @@ const getMessages = asyncHandler(async (req, res) => {
 
 module.exports = {
   createConversation,
+  startConversation,
   getConversations,
   getMessages,
 };

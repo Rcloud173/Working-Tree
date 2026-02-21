@@ -1,0 +1,61 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "nav": {
+    "home": "Home",
+    "network": "Network",
+    "opportunities": "Opportunities",
+    "messages": "Messages",
+    "alerts": "Alerts",
+    "weather": "Weather",
+    "market": "Market",
+    "profile": "Profile",
+    "settings": "Settings",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "account": "Account",
+    "notifications": "Notifications",
+    "privacy": "Privacy & Security",
+    "preferences": "Preferences",
+    "dangerZone": "Danger Zone",
+    "preferencesSubtitle": "Customize your KrishiConnect experience",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language",
+    "location": "Location",
+    "locationPlaceholder": "City, State",
+    "locationHint": "Used for local weather & market price alerts",
+    "savePreferences": "Save Preferences",
+    "saving": "Saving...",
+    "preferencesSaved": "Preferences saved!",
+    "preferencesSaveFailed": "Failed to save preferences",
+    "darkModeHint": "Dark mode will apply globally once your backend updates the preference"
+  },
+  "profile": {
+    "title": "Profile",
+    "posts": "Posts",
+    "saved": "Saved",
+    "followers": "Followers",
+    "following": "Following",
+    "editProfile": "Edit Profile",
+    "noPosts": "No posts yet",
+    "noPostsHint": "Share your farming experiences!",
+    "noSavedPosts": "No saved posts",
+    "noSavedPostsHint": "Bookmark posts to see them here"
+  },
+  "home": {
+    "title": "Feed",
+    "sharePlaceholder": "Share your farming tips...",
+    "post": "Post"
+  }
+}

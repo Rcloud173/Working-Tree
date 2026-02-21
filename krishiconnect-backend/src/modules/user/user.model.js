@@ -31,6 +31,13 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: 100,
     },
+    username: {
+      type: String,
+      trim: true,
+      sparse: true,
+      unique: true,
+      index: true,
+    },
     avatar: {
       url: String,
       publicId: String,
@@ -136,7 +143,8 @@ const userSchema = new mongoose.Schema(
     preferences: {
       language: {
         type: String,
-        default: 'hindi',
+        enum: ['en', 'hi', 'mr'],
+        default: 'en',
       },
       notifications: {
         push: { type: Boolean, default: true },

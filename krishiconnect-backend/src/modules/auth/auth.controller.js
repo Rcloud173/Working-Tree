@@ -3,9 +3,13 @@ const ApiResponse = require('../../utils/ApiResponse');
 const asyncHandler = require('../../utils/asyncHandler');
 
 const register = asyncHandler(async (req, res) => {
-  const result = await authService.register(req.body);
+  const result = await authService.register(req.body || {});
   const message = result.email ? 'OTP sent to your email' : 'OTP sent to your phone';
-  res.status(201).json(new ApiResponse(201, result, message));
+  res.status(201).json({
+    success: true,
+    message,
+    data: result,
+  });
 });
 
 const verifyOTP = asyncHandler(async (req, res) => {

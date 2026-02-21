@@ -12,29 +12,27 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
     },
-
     type: {
       type: String,
       enum: ['text', 'image', 'voice', 'file'],
       required: true,
+      default: 'text',
     },
-    content: {
-      text: String,
-      media: {
-        url: String,
-        publicId: String,
-        fileName: String,
-        fileSize: Number,
-        mimeType: String,
-      },
+    /** Encrypted payload (content object). Decrypt with utils/encryption using iv. */
+    encryptedContent: {
+      type: String,
+      required: true,
     },
-
+    iv: {
+      type: String,
+      required: true,
+    },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',
     },
-
     status: {
       type: String,
       enum: ['sent', 'delivered', 'read'],
@@ -43,10 +41,9 @@ const messageSchema = new mongoose.Schema(
     readBy: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        readAt: Date,
+        readAt: { type: Date, default: Date.now },
       },
     ],
-
     isDeleted: {
       type: Boolean,
       default: false,
@@ -57,6 +54,6 @@ const messageSchema = new mongoose.Schema(
 );
 
 messageSchema.index({ conversation: 1, createdAt: -1 });
-messageSchema.index({ sender: 1 });
+messageSchema.index({ sender: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Message', messageSchema);

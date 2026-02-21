@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Settings, User, Lock, Bell, Shield, Sliders, AlertTriangle,
   Camera, Eye, EyeOff, Check, X, Loader, AlertCircle, RefreshCw,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { authStore } from '../store/authStore';
 import { userService } from '../services/user.service';
+import { setStoredLanguage } from '../i18n';
 
 // ============================================================================
 // ✅ API PLACEHOLDER FUNCTIONS
@@ -36,11 +38,11 @@ const settingsApi = {
     return { avatarUrl: URL.createObjectURL(file) };
   },
 
-  // TODO: PUT ${API_BASE}/settings/password  body: { currentPassword, newPassword }
   changePassword: async (data) => {
-    await delay(1000);
-    if (data.currentPassword === 'wrong') throw new Error('Current password is incorrect');
-    return { success: true };
+    return userService.updatePassword({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+    });
   },
 
   // TODO: PUT ${API_BASE}/settings/account  body: { isPublic, emailNotifications }
@@ -131,22 +133,17 @@ const DEMO_BLOCKED_USERS = [
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिन्दी (Hindi)' },
-  { code: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
-  { code: 'mr', label: 'मराठी (Marathi)' },
-  { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
-  { code: 'bn', label: 'বাংলা (Bengali)' },
-  { code: 'ta', label: 'தமிழ் (Tamil)' },
-  { code: 'te', label: 'తెలుగు (Telugu)' },
+  { code: 'hi', label: 'हिंदी' },
+  { code: 'mr', label: 'मराठी' },
 ];
 
 const NAV_SECTIONS = [
-  { id: 'profile',       icon: User,          label: 'Profile' },
-  { id: 'account',       icon: Key,           label: 'Account' },
-  { id: 'notifications', icon: Bell,          label: 'Notifications' },
-  { id: 'privacy',       icon: Shield,        label: 'Privacy & Security' },
-  { id: 'preferences',   icon: Sliders,       label: 'Preferences' },
-  { id: 'danger',        icon: AlertTriangle, label: 'Danger Zone' },
+  { id: 'profile',       icon: User,          labelKey: 'settings.profile' },
+  { id: 'account',       icon: Key,           labelKey: 'settings.account' },
+  { id: 'notifications', icon: Bell,          labelKey: 'settings.notifications' },
+  { id: 'privacy',       icon: Shield,        labelKey: 'settings.privacy' },
+  { id: 'preferences',   icon: Sliders,       labelKey: 'settings.preferences' },
+  { id: 'danger',        icon: AlertTriangle, labelKey: 'settings.dangerZone' },
 ];
 
 // ============================================================================
@@ -410,14 +407,17 @@ const AccountSection = ({ data, onToast }) => {
   const handlePasswordChange = async () => {
     if (!validatePw()) return;
     setPwLoading(true);
+    setPwErrors({});
     try {
       await settingsApi.changePassword({ currentPassword: pwForm.current, newPassword: pwForm.newPw });
       setPwForm({ current: '', newPw: '', confirm: '' });
       onToast('Password changed successfully!', 'success');
     } catch (err) {
-      onToast(err.message || 'Failed to change password', 'error');
+      const message = err.response?.data?.message || err.message || 'Failed to change password';
+      onToast(message, 'error');
     } finally {
-      setPwLoading(false); }
+      setPwLoading(false);
+    }
   };
 
   const handleToggle = async (field, value) => {
@@ -676,18 +676,41 @@ const PrivacySection = ({ data, onToast }) => {
 // SECTION: PREFERENCES
 // ============================================================================
 const PreferencesSection = ({ data, onToast }) => {
+  const { t, i18n } = useTranslation();
+  const setLanguage = authStore.getState().setLanguage;
+  const hasAuth = !!authStore.getState().accessToken;
   const [prefs, setPrefs] = useState(data);
   const [loading, setLoading] = useState(false);
+  const [languageSaving, setLanguageSaving] = useState(false);
 
   const set = (field, value) => setPrefs(prev => ({ ...prev, [field]: value }));
+
+  const handleLanguageChange = async (newLang) => {
+    set('language', newLang);
+    i18n.changeLanguage(newLang);
+    setStoredLanguage(newLang);
+    setLanguage(newLang);
+    if (hasAuth) {
+      setLanguageSaving(true);
+      try {
+        const updated = await userService.updateLanguage(newLang);
+        if (updated?.preferences) authStore.setUser(updated);
+        onToast(t('settings.preferencesSaved'), 'success');
+      } catch {
+        onToast(t('settings.preferencesSaveFailed'), 'error');
+      } finally {
+        setLanguageSaving(false);
+      }
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
     try {
       await settingsApi.updatePreferences(prefs);
-      onToast('Preferences saved!', 'success');
+      onToast(t('settings.preferencesSaved'), 'success');
     } catch {
-      onToast('Failed to save preferences', 'error');
+      onToast(t('settings.preferencesSaveFailed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -695,17 +718,17 @@ const PreferencesSection = ({ data, onToast }) => {
 
   return (
     <SectionCard>
-      <SectionHeader icon={Sliders} title="Preferences" subtitle="Customize your KrishiConnect experience" />
+      <SectionHeader icon={Sliders} title={t('settings.preferences')} subtitle={t('settings.preferencesSubtitle')} />
 
       <div className="px-5 sm:px-6 py-5 space-y-5">
         {/* Theme */}
         <div>
-          <label className="text-xs font-bold text-gray-500 block mb-2.5">Theme</label>
+          <label className="text-xs font-bold text-gray-500 block mb-2.5">{t('settings.theme')}</label>
           <div className="flex gap-3">
             {[
-              { value: 'light', icon: Sun,  label: 'Light' },
-              { value: 'dark',  icon: Moon, label: 'Dark'  },
-            ].map(({ value, icon: Icon, label }) => (
+              { value: 'light', icon: Sun,  labelKey: 'settings.themeLight' },
+              { value: 'dark',  icon: Moon, labelKey: 'settings.themeDark'  },
+            ].map(({ value, icon: Icon, labelKey }) => (
               <button key={value} onClick={() => set('theme', value)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition ${
                   prefs.theme === value
@@ -713,7 +736,7 @@ const PreferencesSection = ({ data, onToast }) => {
                     : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
                 }`}>
                 <Icon size={15} />
-                {label}
+                {t(labelKey)}
                 {prefs.theme === value && <Check size={13} />}
               </button>
             ))}
@@ -721,36 +744,45 @@ const PreferencesSection = ({ data, onToast }) => {
           {prefs.theme === 'dark' && (
             <p className="mt-2 text-xs text-gray-400 flex items-center gap-1.5 bg-orange-50 border border-orange-100 px-3 py-2 rounded-lg">
               <Info size={12} className="text-orange-500 flex-shrink-0" />
-              Dark mode will apply globally once your backend updates the preference
+              {t('settings.darkModeHint')}
             </p>
           )}
         </div>
 
         {/* Language */}
         <div>
-          <label className="text-xs font-bold text-gray-500 block mb-1.5">Language</label>
+          <label className="text-xs font-bold text-gray-500 block mb-1.5">{t('settings.language')}</label>
           <div className="relative">
             <Globe size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <select value={prefs.language} onChange={(e) => set('language', e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 bg-white appearance-none cursor-pointer">
+            <select
+              value={['en', 'hi', 'mr'].includes(prefs.language) ? prefs.language : 'en'}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              disabled={languageSaving}
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 bg-white appearance-none cursor-pointer disabled:opacity-70"
+            >
               {LANGUAGES.map(l => (
                 <option key={l.code} value={l.code}>{l.label}</option>
               ))}
             </select>
+            {languageSaving && (
+              <span className="absolute right-10 top-1/2 -translate-y-1/2">
+                <Loader size={14} className="animate-spin text-green-600" />
+              </span>
+            )}
           </div>
         </div>
 
         {/* Location */}
         <div>
-          <label className="text-xs font-bold text-gray-500 block mb-1.5">Location</label>
+          <label className="text-xs font-bold text-gray-500 block mb-1.5">{t('settings.location')}</label>
           <div className="relative">
             <MapPin size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input type="text" value={prefs.location}
               onChange={(e) => set('location', e.target.value)}
-              placeholder="City, State"
+              placeholder={t('settings.locationPlaceholder')}
               className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 transition" />
           </div>
-          <p className="text-xs text-gray-400 mt-1">Used for local weather & market price alerts</p>
+          <p className="text-xs text-gray-400 mt-1">{t('settings.locationHint')}</p>
         </div>
       </div>
 
@@ -758,7 +790,7 @@ const PreferencesSection = ({ data, onToast }) => {
         <button onClick={handleSave} disabled={loading}
           className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition flex items-center gap-2 shadow-sm hover:shadow-md">
           {loading ? <Loader size={15} className="animate-spin" /> : <Save size={15} />}
-          {loading ? 'Saving...' : 'Save Preferences'}
+          {loading ? t('settings.saving') : t('settings.savePreferences')}
         </button>
       </div>
     </SectionCard>
@@ -901,6 +933,7 @@ const DangerSection = ({ onToast }) => {
 // MAIN SETTINGS PAGE
 // ============================================================================
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const [settings, setSettings]   = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
@@ -916,9 +949,10 @@ const SettingsPage = () => {
     try {
       const hasAuth = authStore.getState().accessToken;
       let profile = DEMO_SETTINGS.profile;
+      let raw = null;
       if (hasAuth) {
         try {
-          const raw = await userService.getMe();
+          raw = await userService.getMe();
           profile = {
             name: raw?.name ?? '',
             username: raw?.username ?? raw?.name ?? '',
@@ -935,6 +969,10 @@ const SettingsPage = () => {
         }
       }
       const { settings: rest } = await settingsApi.fetchSettings();
+      if (hasAuth && raw?.preferences) {
+        rest.preferences = { ...rest.preferences, ...raw.preferences };
+        if (raw.preferences.language) rest.preferences.language = raw.preferences.language;
+      }
       setSettings({ ...rest, profile });
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Failed to load settings. Please try again.');
@@ -955,7 +993,8 @@ const SettingsPage = () => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const activeLabel = NAV_SECTIONS.find(s => s.id === activeSection)?.label || 'Settings';
+  const activeSectionMeta = NAV_SECTIONS.find(s => s.id === activeSection);
+  const activeLabel = activeSectionMeta ? t(activeSectionMeta.labelKey) : t('settings.title');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -974,7 +1013,7 @@ const SettingsPage = () => {
           </button>
           <Settings size={20} className="text-green-600 hidden lg:block flex-shrink-0" />
           <div className="flex-1">
-            <h1 className="font-black text-gray-900 text-lg leading-none">Settings</h1>
+            <h1 className="font-black text-gray-900 text-lg leading-none">{t('settings.title')}</h1>
             <p className="text-xs text-gray-400 mt-0.5 lg:hidden">{activeLabel}</p>
           </div>
           <span className="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-lg font-bold border border-green-100">
@@ -993,8 +1032,8 @@ const SettingsPage = () => {
             onClick={(e) => { if (e.target === e.currentTarget) setMobileSidebarOpen(false); }}>
 
             <nav className="w-56 bg-white rounded-2xl border border-gray-100 shadow-sm p-2 sticky top-24 overflow-hidden">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 py-2">Settings</p>
-              {NAV_SECTIONS.map(({ id, icon: Icon, label }) => (
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 py-2">{t('settings.title')}</p>
+              {NAV_SECTIONS.map(({ id, icon: Icon, labelKey }) => (
                 <button key={id} onClick={() => handleNavClick(id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-0.5 ${
                     activeSection === id
@@ -1004,7 +1043,7 @@ const SettingsPage = () => {
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}>
                   <Icon size={16} className={activeSection === id && id === 'danger' ? 'text-red-500' : activeSection === id ? 'text-green-600' : 'text-gray-400'} />
-                  {label}
+                  {t(labelKey)}
                   {activeSection === id && (
                     <ChevronRight size={13} className="ml-auto opacity-50" />
                   )}

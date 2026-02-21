@@ -27,6 +27,29 @@ const getProfile = async (userId, viewerId = null) => {
   return user;
 };
 
+/**
+ * Update password: verify current with bcrypt, hash and save new one, clear all refresh tokens.
+ */
+const updatePassword = async (userId, currentPassword, newPassword) => {
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  if (!user.password) {
+    throw new ApiError(400, 'Current password is incorrect');
+  }
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    throw new ApiError(400, 'Current password is incorrect');
+  }
+  user.password = newPassword;
+  user.lastPasswordChangeAt = new Date();
+  await user.save();
+
+  await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
+  return { success: true };
+};
+
 const updateProfile = async (userId, updateData) => {
   const allowedFields = [
     'name',
@@ -50,6 +73,20 @@ const updateProfile = async (userId, updateData) => {
     runValidators: true,
   }).select('-password -refreshTokens -fcmTokens');
 
+  return user;
+};
+
+const updateLanguagePreference = async (userId, language) => {
+  const allowed = ['en', 'hi', 'mr'];
+  if (!allowed.includes(language)) {
+    throw new ApiError(400, `Language must be one of: ${allowed.join(', ')}`);
+  }
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: { 'preferences.language': language } },
+    { new: true, runValidators: true }
+  ).select('-password -refreshTokens -fcmTokens');
+  if (!user) throw new ApiError(404, 'User not found');
   return user;
 };
 
@@ -275,11 +312,13 @@ const getFollowing = async (userId, options = {}) => {
 module.exports = {
   getProfile,
   updateProfile,
+  updateLanguagePreference,
   updateAvatar,
   removeAvatar,
   updateProfilePhoto,
   updateBio,
   clearBio,
+  updatePassword,
   updateBackground,
   getBackgroundPresets,
   searchUsers,

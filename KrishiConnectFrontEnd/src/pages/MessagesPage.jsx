@@ -1,115 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   MessageSquare, Search, Send, Phone, Video, MoreHorizontal, ArrowLeft,
   Check, CheckCheck, Image, Paperclip, Smile, Loader, AlertCircle,
-  RefreshCw, Users, X, Plus, MapPin
+  RefreshCw
 } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { chatService } from '../services/chat.service';
+import { useSocket } from '../context/SocketContext';
 
-// ============================================================================
-// API PLACEHOLDER FUNCTIONS
-// ============================================================================
-const API_BASE = 'http://localhost:5000/api';
-const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-
-const messagesApi = {
-  fetchConversations: async () => {
-    // TODO: GET ${API_BASE}/messages/conversations
-    await delay(700);
-    return { conversations: DEMO_CONVERSATIONS };
-  },
-  fetchMessages: async (conversationId) => {
-    // TODO: GET ${API_BASE}/messages/${conversationId}
-    await delay(500);
-    return { messages: DEMO_MESSAGES[conversationId] || [] };
-  },
-  sendMessage: async (conversationId, content, type = 'text') => {
-    // TODO: POST ${API_BASE}/messages/${conversationId}  body: { content, type }
-    await delay(300);
-    return {
-      message: {
-        _id: `msg-${Date.now()}`,
-        senderId: 'current-user',
-        content,
-        type,
-        timestamp: new Date().toISOString(),
-        status: 'sent',
-      },
-    };
-  },
-  markAsRead: async (conversationId) => {
-    // TODO: PUT ${API_BASE}/messages/${conversationId}/read
-    await delay(200);
-    return { success: true };
-  },
-  searchConversations: async (query) => {
-    // TODO: GET ${API_BASE}/messages/search?q=${query}
-    await delay(400);
-    return { conversations: DEMO_CONVERSATIONS.filter(c => c.participant.name.toLowerCase().includes(query.toLowerCase())) };
-  },
-  createConversation: async (userId) => {
-    // TODO: POST ${API_BASE}/messages/conversations  body: { userId }
-    await delay(500);
-    return { conversationId: `conv-${Date.now()}` };
-  },
-};
-
-// ============================================================================
-// DEMO DATA
-// ============================================================================
-const DEMO_CONVERSATIONS = [
-  {
-    _id: 'conv-1',
-    participant: { _id: 'u1', name: 'Priya Singh', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop', specialty: 'Vegetable Farmer', online: true },
-    lastMessage: 'Yes, the drip system works perfectly for tomatoes!',
-    lastMessageTime: '2m ago', unreadCount: 2, lastMessageSenderId: 'u1',
-  },
-  {
-    _id: 'conv-2',
-    participant: { _id: 'u2', name: 'Amit Patel', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop', specialty: 'Sugarcane Consultant', online: false },
-    lastMessage: 'Can you share the subsidy application form?',
-    lastMessageTime: '1h ago', unreadCount: 0, lastMessageSenderId: 'current-user',
-  },
-  {
-    _id: 'conv-3',
-    participant: { _id: 'u3', name: 'Neha Sharma', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop', specialty: 'Rice Farmer', online: true },
-    lastMessage: 'The new variety gives 20% more yield 🌾',
-    lastMessageTime: '3h ago', unreadCount: 5, lastMessageSenderId: 'u3',
-  },
-  {
-    _id: 'conv-4',
-    participant: { _id: 'u4', name: 'Ramesh Yadav', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop', specialty: 'Rice Cultivation', online: false },
-    lastMessage: 'Thanks for the advice on fertilizer timing!',
-    lastMessageTime: 'Yesterday', unreadCount: 0, lastMessageSenderId: 'u4',
-  },
-  {
-    _id: 'conv-5',
-    participant: { _id: 'u5', name: 'Meena Kumari', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop', specialty: 'Dairy & Poultry', online: false },
-    lastMessage: 'When is the next KrishiMela event?',
-    lastMessageTime: '2 days ago', unreadCount: 1, lastMessageSenderId: 'u5',
-  },
-];
-
-const DEMO_MESSAGES = {
-  'conv-1': [
-    { _id: 'm1', senderId: 'u1', content: 'Namaste! I saw your post about drip irrigation. Very helpful!', type: 'text', timestamp: new Date(Date.now() - 3600000).toISOString(), status: 'read' },
-    { _id: 'm2', senderId: 'current-user', content: 'Thank you Priya ji! Are you using drip for tomatoes?', type: 'text', timestamp: new Date(Date.now() - 3500000).toISOString(), status: 'read' },
-    { _id: 'm3', senderId: 'u1', content: 'Yes! I installed it last season. Water usage dropped by 40%.', type: 'text', timestamp: new Date(Date.now() - 3400000).toISOString(), status: 'read' },
-    { _id: 'm4', senderId: 'current-user', content: 'That is excellent! What brand did you use? I am planning for my farm.', type: 'text', timestamp: new Date(Date.now() - 3300000).toISOString(), status: 'read' },
-    { _id: 'm5', senderId: 'u1', content: 'Netafim — but Jain Irrigation is also good and cheaper.', type: 'text', timestamp: new Date(Date.now() - 180000).toISOString(), status: 'read' },
-    { _id: 'm6', senderId: 'u1', content: 'Yes, the drip system works perfectly for tomatoes!', type: 'text', timestamp: new Date(Date.now() - 120000).toISOString(), status: 'delivered' },
-  ],
-  'conv-2': [
-    { _id: 'n1', senderId: 'u2', content: 'Bhai, I need advice on sugarcane ratoon management.', type: 'text', timestamp: new Date(Date.now() - 7200000).toISOString(), status: 'read' },
-    { _id: 'n2', senderId: 'current-user', content: 'Sure! How old is your first crop?', type: 'text', timestamp: new Date(Date.now() - 7100000).toISOString(), status: 'read' },
-    { _id: 'n3', senderId: 'u2', content: '10 months. Should I apply nitrogen now?', type: 'text', timestamp: new Date(Date.now() - 7000000).toISOString(), status: 'read' },
-    { _id: 'n4', senderId: 'current-user', content: 'Yes, split dose is best. 1/3 at ratoon emergence, 2/3 after 45 days.', type: 'text', timestamp: new Date(Date.now() - 6900000).toISOString(), status: 'read' },
-    { _id: 'n5', senderId: 'current-user', content: 'Can you share the subsidy application form?', type: 'text', timestamp: new Date(Date.now() - 3600000).toISOString(), status: 'sent' },
-  ],
-};
-
-// ============================================================================
-// UTILITY
-// ============================================================================
 const formatTime = (dateStr) => {
   const d = new Date(dateStr);
   const now = new Date();
@@ -122,10 +21,48 @@ const formatTime = (dateStr) => {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
+// Map backend conversation to list item shape (other participant, lastMessage text/time).
+function mapConversation(conv, currentUserId) {
+  const other = conv.participants?.find((p) => String(p.user?._id ?? p.user) !== String(currentUserId));
+  const user = other?.user ?? other;
+  const lastSenderId = conv.lastMessage?.sender ? (conv.lastMessage.sender._id ?? conv.lastMessage.sender) : null;
+  return {
+    _id: conv._id,
+    participant: {
+      _id: user?._id ?? user,
+      name: user?.name ?? 'User',
+      avatar: user?.avatar ?? user?.profilePhoto,
+      specialty: user?.headline ?? '',
+      online: false,
+    },
+    lastMessage: conv.lastMessage?.text ?? '',
+    lastMessageTime: conv.lastMessage?.sentAt ? formatTime(conv.lastMessage.sentAt) : '',
+    unreadCount: 0,
+    lastMessageSenderId: lastSenderId ?? null,
+  };
+}
+
+// Map backend message to bubble shape (senderId, content, timestamp, status).
+function mapMessage(msg, currentUserId) {
+  const senderId = msg.sender?._id ?? msg.sender ?? msg.senderId;
+  const content = typeof msg.content === 'object' && msg.content?.text != null ? msg.content.text : (msg.content ?? '');
+  return {
+    _id: msg._id,
+    senderId: String(senderId),
+    content,
+    type: msg.type || 'text',
+    timestamp: msg.createdAt ?? msg.timestamp,
+    status: msg.status ?? 'sent',
+  };
+}
+
+// ============================================================================
+// UTILITY
+// ============================================================================
 const groupMessagesByDate = (messages) => {
   const groups = {};
-  messages.forEach(msg => {
-    const date = new Date(msg.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  messages.forEach((msg) => {
+    const date = new Date(msg.timestamp || msg.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
     if (!groups[date]) groups[date] = [];
     groups[date].push(msg);
   });
@@ -199,6 +136,11 @@ const TypingIndicator = () => (
 // MAIN MESSAGES PAGE
 // ============================================================================
 const MessagesPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentUserId = useAuthStore((s) => s.user?._id ?? null);
+  const { joinConversation, leaveConversation, sendMessage: socketSendMessage, emitTypingStart, emitTypingStop, subscribe, connected } = useSocket();
+
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -212,6 +154,9 @@ const MessagesPage = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const activeConvoIdRef = useRef(null);
+  activeConvoIdRef.current = activeConvo?._id;
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
@@ -219,69 +164,165 @@ const MessagesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const { conversations: convos } = await messagesApi.fetchConversations();
-      setConversations(convos);
+      const { conversations: list } = await chatService.getConversations();
+      const mapped = (list || []).map((c) => mapConversation(c, currentUserId));
+      const openConv = location.state?.openConversation;
+      const toSet = openConv
+        ? [mapConversation(openConv, currentUserId), ...mapped.filter((c) => String(c._id) !== String(openConv._id))]
+        : mapped;
+      setConversations(toSet);
+      return toSet;
     } catch {
-      setError('Failed to load messages.');
+      setError('Failed to load conversations.');
+      return [];
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUserId, location]);
 
-  useEffect(() => { loadConversations(); }, [loadConversations]);
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Open conversation from profile "Chat" (state.openConversationId or state.openConversation)
+  const openFromState = location.state?.openConversationId ?? location.state?.openConversation?._id;
+  useEffect(() => {
+    if (!openFromState || !currentUserId) return;
+    const openConv = location.state?.openConversation;
+    if (openConv) {
+      const mapped = mapConversation(openConv, currentUserId);
+      setConversations((prev) => {
+        const exists = prev.some((c) => c._id === mapped._id);
+        if (exists) return prev;
+        return [mapped, ...prev];
+      });
+      setActiveConvo(mapped);
+      setShowSidebar(false);
+      setMessagesLoading(true);
+      chatService.getMessages(mapped._id).then(({ messages: msgs }) => {
+        setMessages((msgs || []).map((m) => mapMessage(m, currentUserId)).reverse());
+        setMessagesLoading(false);
+      }).catch(() => setMessagesLoading(false));
+    } else {
+      const run = async () => {
+        const list = await loadConversations();
+        const found = list.find((c) => c._id === openFromState);
+        if (found) {
+          setActiveConvo(found);
+          setShowSidebar(false);
+          setMessagesLoading(true);
+          try {
+            const { messages: msgs } = await chatService.getMessages(openFromState);
+            setMessages((msgs || []).map((m) => mapMessage(m, currentUserId)).reverse());
+          } finally {
+            setMessagesLoading(false);
+          }
+        }
+      };
+      run();
+    }
+    navigate('/messages', { replace: true, state: {} });
+  }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages]);
 
-  const handleSelectConvo = async (convo) => {
+  const handleSelectConvo = useCallback(async (convo) => {
+    if (activeConvo?._id) leaveConversation(activeConvo._id);
     setActiveConvo(convo);
     setShowSidebar(false);
     setMessagesLoading(true);
+    joinConversation(convo._id);
     try {
-      const { messages: msgs } = await messagesApi.fetchMessages(convo._id);
-      setMessages(msgs);
-      await messagesApi.markAsRead(convo._id);
-      setConversations(prev => prev.map(c => c._id === convo._id ? { ...c, unreadCount: 0 } : c));
-    } catch { } finally { setMessagesLoading(false); }
-  };
+      const { messages: msgs } = await chatService.getMessages(convo._id);
+      setMessages((msgs || []).map((m) => mapMessage(m, currentUserId)).reverse());
+    } catch {
+      setMessages([]);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [activeConvo?._id, currentUserId, joinConversation, leaveConversation]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(() => {
     if (!messageInput.trim() || !activeConvo || sending) return;
     const content = messageInput.trim();
     setMessageInput('');
     setSending(true);
-
-    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
-      _id: `temp-${Date.now()}`,
-      senderId: 'current-user',
+      _id: tempId,
+      senderId: String(currentUserId),
       content,
       type: 'text',
       timestamp: new Date().toISOString(),
       status: 'sent',
     };
-    setMessages(prev => [...prev, optimisticMsg]);
+    setMessages((prev) => [...prev, optimisticMsg]);
+    socketSendMessage(activeConvo._id, 'text', content);
+    setConversations((prev) =>
+      prev.map((c) =>
+        c._id === activeConvo._id
+          ? { ...c, lastMessage: content, lastMessageTime: 'now', lastMessageSenderId: String(currentUserId) }
+          : c
+      )
+    );
+    setSending(false);
+  }, [messageInput, activeConvo, sending, currentUserId, socketSendMessage]);
 
-    // Simulate typing indicator from other side
-    setTimeout(() => setIsTyping(true), 800);
-    setTimeout(() => setIsTyping(false), 2500);
+  useEffect(() => {
+    if (!activeConvo?._id) return;
+    const unsubNew = subscribe('message:new', (payload) => {
+      const convId = payload?.conversation ?? payload?.conversationId;
+      if (String(convId) !== String(activeConvo._id)) return;
+      const mapped = mapMessage(payload, currentUserId);
+      setMessages((prev) => {
+        if (prev.some((m) => m._id === mapped._id)) return prev;
+        const isFromMe = String(mapped.senderId) === String(currentUserId);
+        if (isFromMe) {
+          const withoutTemp = prev.filter((m) => !String(m._id).startsWith('temp-'));
+          return [...withoutTemp, mapped];
+        }
+        return [...prev, mapped];
+      });
+    });
+    const unsubTyping = subscribe('user:typing', ({ conversationId, userId }) => {
+      if (conversationId === activeConvo._id && String(userId) !== String(currentUserId)) setIsTyping(true);
+    });
+    const unsubStopped = subscribe('user:stopped-typing', ({ conversationId }) => {
+      if (conversationId === activeConvo._id) setIsTyping(false);
+    });
+    const unsubErr = subscribe('error', (err) => {
+      if (err?.message) setError(err.message);
+    });
+    return () => {
+      unsubNew();
+      unsubTyping();
+      unsubStopped();
+      unsubErr();
+    };
+  }, [activeConvo?._id, currentUserId, subscribe]);
 
-    try {
-      const { message } = await messagesApi.sendMessage(activeConvo._id, content);
-      setMessages(prev => prev.map(m => m._id === optimisticMsg._id ? message : m));
-      setConversations(prev => prev.map(c => c._id === activeConvo._id
-        ? { ...c, lastMessage: content, lastMessageTime: 'now', lastMessageSenderId: 'current-user' } : c));
-    } catch {
-      setMessages(prev => prev.filter(m => m._id !== optimisticMsg._id));
-    } finally {
-      setSending(false);
-    }
-  };
+  const handleTypingChange = useCallback(() => {
+    if (!activeConvo?._id) return;
+    emitTypingStart(activeConvo._id);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      emitTypingStop(activeConvo._id);
+      typingTimeoutRef.current = null;
+    }, 2000);
+  }, [activeConvo?._id, emitTypingStart, emitTypingStop]);
 
-  const handleSearch = async (q) => {
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      const id = activeConvoIdRef.current;
+      if (id) leaveConversation(id);
+    };
+  }, [leaveConversation]);
+
+  const handleSearch = (q) => {
     setSearchQuery(q);
-    if (!q.trim()) { loadConversations(); return; }
-    const { conversations: results } = await messagesApi.searchConversations(q);
-    setConversations(results);
+    if (!q.trim()) loadConversations();
+    else setConversations((prev) => prev.filter((c) => c.participant?.name?.toLowerCase().includes(q.toLowerCase())));
   };
 
   const handleKeyDown = (e) => {
@@ -421,7 +462,7 @@ const MessagesPage = () => {
                             <div className="flex-1 h-px bg-gray-200" />
                           </div>
                           {msgs.map(msg => (
-                            <MessageBubble key={msg._id} message={msg} isMine={msg.senderId === 'current-user'} />
+                            <MessageBubble key={msg._id} message={msg} isMine={String(msg.senderId) === String(currentUserId)} />
                           ))}
                         </div>
                       ))}
@@ -445,7 +486,7 @@ const MessagesPage = () => {
                         ref={inputRef}
                         rows={1}
                         value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
+                        onChange={(e) => { setMessageInput(e.target.value); handleTypingChange(); }}
                         onKeyDown={handleKeyDown}
                         placeholder="Type a message..."
                         className="w-full px-4 py-2.5 text-sm bg-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-200 resize-none transition leading-relaxed max-h-28 overflow-y-auto"

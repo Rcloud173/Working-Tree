@@ -11,15 +11,22 @@ const errorHandler = (err, req, res, next) => {
     error = new ApiError(statusCode, message);
   }
 
-  const response = new ApiResponse(error.statusCode, null, error.message, {
-    errors: error.errors,
-  });
-
-  if (process.env.NODE_ENV === 'development') {
-    logger.error(err.stack);
+  // Log real error for debugging (always log for 500, and in development)
+  if (error.statusCode >= 500 || process.env.NODE_ENV !== 'production') {
+    logger.error('[Error]', {
+      statusCode: error.statusCode,
+      message: error.message,
+      stack: err.stack || error.stack,
+    });
   }
 
-  res.status(error.statusCode).json(response);
+  const payload = {
+    success: false,
+    message: error.message,
+    ...(error.errors && error.errors.length ? { errors: error.errors } : {}),
+  };
+
+  res.status(error.statusCode).json(payload);
 };
 
 module.exports = errorHandler;

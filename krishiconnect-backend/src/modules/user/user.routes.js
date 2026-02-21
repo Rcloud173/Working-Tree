@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('./user.controller');
+const { validate, updatePasswordSchema, updateLanguageSchema } = require('./user.validation');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const { uploadSingleProfilePic, uploadSingleBackground } = require('../../middlewares/upload.middleware');
 const { uploadToCloudinary } = require('../../utils/uploadToCloudinary');
@@ -13,6 +14,9 @@ router.use(authenticate);
 
 router.get('/me', userController.getMe);
 router.patch('/me', userController.updateMe);
+router.get('/me/saved', userController.getMySavedPosts);
+router.put('/me/update-password', validate(updatePasswordSchema), userController.updatePassword);
+router.put('/me/preferences/language', validate(updateLanguageSchema), userController.updateLanguage);
 
 router.post(
   '/me/avatar',
@@ -84,6 +88,8 @@ router.post(
 );
 
 router.get('/search', userController.searchUsers);
+router.get('/:userId/posts', userController.getPublicUserPosts);
+router.get('/:userId/can-chat', userController.getCanChat);
 router.get('/:userId', userController.getUserById);
 router.post('/:userId/follow', userController.followUser);
 router.delete('/:userId/follow', userController.unfollowUser);

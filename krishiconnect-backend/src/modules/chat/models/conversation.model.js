@@ -34,8 +34,10 @@ const conversationSchema = new mongoose.Schema(
       description: String,
     },
 
+    /** Encrypted preview for list; decrypt when returning. iv for last message. */
     lastMessage: {
-      text: String,
+      encryptedText: String,
+      iv: String,
       sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       sentAt: Date,
     },

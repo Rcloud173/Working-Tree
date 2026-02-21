@@ -1,5 +1,6 @@
 const postService = require('./post.service');
 const ApiResponse = require('../../utils/ApiResponse');
+const ApiError = require('../../utils/ApiError');
 const asyncHandler = require('../../utils/asyncHandler');
 
 const createPost = asyncHandler(async (req, res) => {
@@ -64,13 +65,25 @@ const toggleSave = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * Saved posts: only for the authenticated user. Uses req.user identity only.
+ * Never use params/query for userId — prevents leaking another user's saved posts.
+ */
 const getSavedPosts = asyncHandler(async (req, res) => {
-  const result = await postService.getSavedPosts(req.user._id, req.query);
+  const userId = req.user?._id ?? req.user?.id;
+  if (!userId) {
+    throw new ApiError(401, 'Authentication required');
+  }
+  const result = await postService.getSavedPosts(userId, req.query);
   res.status(200).json(
     new ApiResponse(200, result.data, 'Saved posts', { pagination: result.pagination })
   );
 });
 
+/**
+ * Public posts by a user (author: userId). Does NOT include saved posts.
+ * Use GET /users/me/saved for the logged-in user's saved posts only.
+ */
 const getUserPosts = asyncHandler(async (req, res) => {
   const result = await postService.getUserPosts(req.params.userId, req.query);
   res.status(200).json(

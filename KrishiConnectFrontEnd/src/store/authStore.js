@@ -41,6 +41,7 @@ function getState() {
     ...state,
     setAuth,
     setUser,
+    setLanguage,
     logout,
   };
 }
@@ -62,6 +63,20 @@ function setUser(updatedUser) {
   if (updatedUser == null) return;
   state = { ...state, user: updatedUser };
   setStored('user', state.user);
+  listeners.forEach((fn) => fn(getState()));
+}
+
+/** Update language preference in user and localStorage; does not call API. Call after backend update. */
+function setLanguage(lang) {
+  if (!lang) return;
+  const nextUser = state.user
+    ? { ...state.user, preferences: { ...(state.user.preferences || {}), language: lang } }
+    : state.user;
+  state = { ...state, user: nextUser };
+  setStored('user', state.user);
+  try {
+    localStorage.setItem('app_language', lang);
+  } catch (_) {}
   listeners.forEach((fn) => fn(getState()));
 }
 
@@ -99,6 +114,7 @@ export const authStore = {
   getState,
   setAuth,
   setUser,
+  setLanguage,
   logout,
   subscribe,
 };

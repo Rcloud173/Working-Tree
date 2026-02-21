@@ -122,4 +122,24 @@ export const userService = {
     await request('DELETE', `/users/${userId}/follow`);
     return { success: true };
   },
+
+  /** PUT /users/me/update-password (requires auth). Body: { currentPassword, newPassword } */
+  updatePassword(data) {
+    return request('PUT', '/users/me/update-password', data);
+  },
+
+  /** PUT /users/me/preferences/language (requires auth). Body: { language: "en"|"hi"|"mr" }. Returns updated user. */
+  async updateLanguage(language) {
+    const { data } = await request('PUT', '/users/me/preferences/language', { language });
+    return data?.data ?? data;
+  },
+
+  /**
+   * GET /users/me/saved — only the logged-in user's saved posts (requires auth).
+   * Never use for another user's profile; backend returns 401 if not authenticated.
+   */
+  async getMySavedPosts(page = 1, limit = 20) {
+    const { data } = await request('GET', `/users/me/saved?page=${page}&limit=${limit}`);
+    return data;
+  },
 };

@@ -146,8 +146,12 @@ export const postService = {
     return `${typeof window !== 'undefined' ? window.location.origin : ''}/post/${postId}`;
   },
 
+  /**
+   * Logged-in user's saved posts only. Uses GET /users/me/saved (auth required).
+   * Do not use for another user's profile — saved posts are private to the account owner.
+   */
   async getSavedPosts(page = 1, limit = 20) {
-    const { data } = await request('GET', `/posts/saved?page=${page}&limit=${limit}`);
+    const { data } = await request('GET', `/users/me/saved?page=${page}&limit=${limit}`);
     const list = (data.data || data || []).map(mapPostToCard);
     const pagination = data.meta?.pagination || data.pagination || {};
     return { posts: list, hasMore: pagination.hasNextPage !== false && pagination.totalPages > page, pagination };

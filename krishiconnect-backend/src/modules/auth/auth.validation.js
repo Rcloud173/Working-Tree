@@ -2,20 +2,28 @@ const Joi = require('joi');
 
 const registerSchema = Joi.object({
   phoneNumber: Joi.string()
+    .trim()
     .pattern(/^[6-9]\d{9}$/)
     .required()
     .messages({
-      'string.pattern.base': 'Invalid Indian phone number',
+      'string.pattern.base': 'Invalid Indian phone number (10 digits, starting with 6-9)',
+      'any.required': 'Phone number is required',
     }),
-  email: Joi.string().email().lowercase().trim().allow('').optional(),
-  name: Joi.string().required().trim().max(100),
-  password: Joi.string().min(6).required(),
-  location: Joi.object({
-    state: Joi.string(),
-    district: Joi.string(),
-    village: Joi.string(),
+  email: Joi.string().email().lowercase().trim().allow('', null).optional(),
+  name: Joi.string().trim().min(1).max(100).required().messages({
+    'any.required': 'Name is required',
+    'string.empty': 'Name is required',
   }),
-});
+  password: Joi.string().min(6).max(128).required().messages({
+    'string.min': 'Password must be at least 6 characters',
+    'any.required': 'Password is required',
+  }),
+  location: Joi.object({
+    state: Joi.string().allow('', null),
+    district: Joi.string().allow('', null),
+    village: Joi.string().allow('', null),
+  }).optional(),
+}).options({ stripUnknown: true });
 
 const verifyOTPSchema = Joi.object({
   phoneNumber: Joi.string()
@@ -72,17 +80,14 @@ const validate = (schema) => (req, res, next) => {
     abortEarly: false,
     stripUnknown: true,
   });
-console.log(error);
-console.log(value);
   if (error) {
     const errors = error.details.map((detail) => ({
       field: detail.path.join('.'),
       message: detail.message,
     }));
     const ApiError = require('../../utils/ApiError');
-    throw new ApiError(400, 'Validation failed', errors);
+    throw new ApiError(400, error.details.map((d) => d.message).join('; ') || 'Validation failed', errors);
   }
-
   req.body = value;
   next();
 };

@@ -1,6 +1,10 @@
+import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import './store/authStore' // hydrate auth from localStorage before any route
+import { authStore } from './store/authStore'
+import { getLanguageToUse } from './i18n'
+import i18n from './i18n'
+import { SocketProvider } from './context/SocketContext'
 import AppLayout from './components/AppLayout'
 import HomePage from './pages/HomePage'
 import AlertsPage from './pages/AlertsPage'
@@ -16,10 +20,19 @@ import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 
 function App() {
+  useEffect(() => {
+    const user = authStore.getState().user
+    const lang = getLanguageToUse(user?.preferences?.language)
+    if (i18n.language !== lang) {
+      i18n.changeLanguage(lang)
+    }
+  }, [])
+
   return (
     <Router>
-      <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-      <Routes>
+      <SocketProvider>
+        <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+        <Routes>
         {/* Auth routes: no sidebar layout */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -43,7 +56,8 @@ function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </SocketProvider>
     </Router>
   )
 }

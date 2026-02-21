@@ -126,7 +126,10 @@ export default function Register() {
       }
       setStep(2);
     } catch (err) {
-      toast.error(err.response?.data?.message || '❌ Registration failed');
+      const data = err.response?.data;
+      const msg = data?.message || err.message || '❌ Registration failed';
+      const details = data?.errors;
+      toast.error(details?.length ? `${msg}: ${details.map((e) => e.message).join(', ')}` : msg);
     } finally {
       setLoading(false);
     }
@@ -190,7 +193,8 @@ export default function Register() {
         toast.success('✉️ OTP resent successfully!');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to resend OTP');
+      const msg = err.response?.data?.message || err.message || 'Failed to resend OTP';
+      toast.error(msg);
     }
   };
 
