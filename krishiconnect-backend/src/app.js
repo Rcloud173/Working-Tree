@@ -21,6 +21,7 @@ const networkRoutes = require('./modules/network/network.routes');
 const weatherRoutes = require('./modules/weather/weather.routes');
 const translateRoutes = require('./modules/translate/translate.routes');
 const settingsRoutes = require('./modules/settings/settings.routes');
+const aiRoutes = require('./modules/ai/ai.routes');
 
 const app = express();
 
@@ -46,7 +47,11 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-app.use(generalLimiter);
+// Apply general limiter to all routes except AI (AI has its own per-user limiter)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/v1/ai')) return next();
+  return generalLimiter(req, res, next);
+});
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
@@ -59,6 +64,7 @@ app.use('/api/v1/network', networkRoutes);
 app.use('/api/v1/weather', weatherRoutes);
 app.use('/api/v1/translate', translateRoutes);
 app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

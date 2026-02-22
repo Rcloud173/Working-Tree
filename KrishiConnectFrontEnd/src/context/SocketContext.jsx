@@ -51,13 +51,25 @@ export function SocketProvider({ children }) {
     const socket = io(url, {
       auth: { token },
       transports: ['websocket', 'polling'],
+      autoConnect: false,
+      reconnectionAttempts: 2,
+      reconnectionDelay: 3000,
+      timeout: 4000,
     });
     socketRef.current = socket;
-    setConnected(socket.connected);
+    setConnected(false);
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
-    socket.on('connect_error', () => setConnected(false));
+    socket.on('connect_error', () => {
+      console.warn('Socket server unavailable — running offline mode');
+      setConnected(false);
+      socket.disconnect();
+    });
+    socket.connect();
     return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('connect_error');
       socket.removeAllListeners();
       socket.disconnect();
       socketRef.current = null;

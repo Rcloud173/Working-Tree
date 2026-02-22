@@ -1732,7 +1732,7 @@ const HomePage = () => {
           {/* <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20, alignItems: 'start' }} className="content-grid"> */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', columnGap: 20, rowGap: 0, alignItems: 'start' }} className="content-grid">
             {/* AI Assistant (left) — guidance & doubt solving; hidden on mobile, shown from 768px */}
-            <div style={{ display: 'none' }} className="profile-col">
+            <div className="profile-col hidden md:block" style={{ minWidth: 280 }}>
               <div style={{ position: 'sticky', top: 80 }}>
                 <div className="card overflow-hidden border-0 shadow-md dark:shadow-none dark:ring-1 dark:ring-gray-700/50 transition-shadow hover:shadow-lg dark:hover:ring-green-500/20">
                   {/* Header banner with subtle overlay */}

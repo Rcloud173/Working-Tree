@@ -1,20 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Loader } from 'lucide-react';
+import { api } from '../services/api';
 
 // ============================================================================
-// AI CHAT PANEL – Expandable below AI card; same layout/theme as Home sections
+// AI CHAT PANEL – Expandable below AI card; calls backend POST /api/v1/ai/ask
 // ============================================================================
+
+const MIN_QUESTION_LENGTH = 10;
+const MAX_QUESTION_LENGTH = 1000;
 
 /**
- * Placeholder: replace with real backend AI API.
- * @param {string} message - User message
- * @returns {Promise<string>} - AI reply
+ * Call backend AI endpoint. Requires auth; question 10–1000 chars, agriculture-related.
+ * @param {string} question - User question
+ * @returns {Promise<string>} - AI reply text
  */
-const sendMessage = async (message) => {
-  // TODO: integrate backend AI API
-  await new Promise((r) => setTimeout(r, 800));
-  return `This is a placeholder reply to: "${message}". Connect your AI API in sendMessage.`;
-};
+async function askAI(question) {
+  const { data } = await api.post('ai/ask', { question: question.trim() });
+  const answer = data?.data?.answer;
+  if (typeof answer !== 'string') return 'No response from assistant.';
+  return answer;
+}
 
 const AIChatPanel = ({ onClose, className = '' }) => {
   const [messages, setMessages] = useState([]);
@@ -35,19 +40,45 @@ const AIChatPanel = ({ onClose, className = '' }) => {
     const text = inputValue.trim();
     if (!text || loading) return;
 
+    if (text.length < MIN_QUESTION_LENGTH) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: text },
+        {
+          role: 'assistant',
+          content: `Please type at least ${MIN_QUESTION_LENGTH} characters (e.g. "What is the best time to sow wheat?").`,
+        },
+      ]);
+      setInputValue('');
+      return;
+    }
+    if (text.length > MAX_QUESTION_LENGTH) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: text.slice(0, 80) + '…' },
+        { role: 'assistant', content: 'Question is too long. Please keep it under 1000 characters.' },
+      ]);
+      setInputValue('');
+      return;
+    }
+
     const userMessage = { role: 'user', content: text };
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setLoading(true);
 
     try {
-      const reply = await sendMessage(text);
+      const reply = await askAI(text);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
-      ]);
+    } catch (err) {
+      const status = err.response?.status;
+      const msg = err.response?.data?.message;
+      let content = 'Sorry, something went wrong. Please try again.';
+      if (status === 400 && msg) content = msg;
+      else if (status === 401) content = 'Please log in to use the assistant.';
+      else if (status === 429) content = msg || 'Too many requests. Please wait a few minutes and try again.';
+      else if ((status === 502 || status === 503) && msg) content = msg;
+      setMessages((prev) => [...prev, { role: 'assistant', content }]);
     } finally {
       setLoading(false);
     }
@@ -66,7 +97,7 @@ const AIChatPanel = ({ onClose, className = '' }) => {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">AI Assistant</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Krishi Assistant</h3>
         <button
           type="button"
           onClick={onClose}
@@ -81,7 +112,7 @@ const AIChatPanel = ({ onClose, className = '' }) => {
       <div className="overflow-y-auto min-h-[200px] max-h-[320px] p-4 space-y-3 bg-gray-50/50 dark:bg-gray-900/30">
         {messages.length === 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
-            Ask anything about crops, weather, or farming.
+            Ask agriculture-related questions (crops, soil, pests, irrigation, weather, schemes). Min 10 characters.
           </p>
         )}
         {messages.map((msg, i) => (
@@ -118,16 +149,17 @@ const AIChatPanel = ({ onClose, className = '' }) => {
             ref={inputRef}
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => setInputValue(e.target.value.slice(0, MAX_QUESTION_LENGTH))}
             onKeyDown={handleKeyDown}
-            placeholder="Type your question..."
+            placeholder="Ask about crops, soil, weather, farming... (min 10 characters)"
+            maxLength={MAX_QUESTION_LENGTH}
             className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600 transition"
             disabled={loading}
           />
           <button
             type="button"
             onClick={handleSend}
-            disabled={!inputValue.trim() || loading}
+            disabled={!inputValue.trim() || loading || inputValue.trim().length < MIN_QUESTION_LENGTH}
             className="p-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex-shrink-0"
             aria-label="Send"
           >
