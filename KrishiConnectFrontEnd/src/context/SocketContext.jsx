@@ -72,19 +72,55 @@ export function SocketProvider({ children }) {
     }
   }, []);
 
+  // Note: socket.io-client does not expose .leave() on the client socket (server-only).
+  // We emit 'conversation:leave' so the server can remove this socket from the room; otherwise no-op.
   const leaveConversation = useCallback((conversationId) => {
-    if (socketRef.current && conversationId) {
+    if (!socketRef.current || !conversationId) return;
+    if (typeof socketRef.current.leave === 'function') {
       socketRef.current.leave(conversationId);
+    } else {
+      socketRef.current.emit('conversation:leave', { conversationId });
     }
   }, []);
 
-  const sendMessage = useCallback((conversationId, type, content) => {
+  const sendMessage = useCallback((conversationId, type, content, replyToId = null) => {
     if (socketRef.current && conversationId) {
       socketRef.current.emit('message:send', {
         conversationId,
         type: type || 'text',
-        content: type === 'text' ? { text: content } : content,
+        content: type === 'text' ? (typeof content === 'string' ? { text: content } : content) : content,
+        ...(replyToId && { replyToId }),
       });
+    }
+  }, []);
+
+  const emitMessageSeen = useCallback((conversationId) => {
+    if (socketRef.current && conversationId) {
+      socketRef.current.emit('message:seen', conversationId);
+    }
+  }, []);
+
+  const emitMessageDelivered = useCallback((messageId) => {
+    if (socketRef.current && messageId) {
+      socketRef.current.emit('message:delivered', { messageId });
+    }
+  }, []);
+
+  const emitReaction = useCallback((messageId, emoji) => {
+    if (socketRef.current && messageId && emoji) {
+      socketRef.current.emit('message:reaction', { messageId, emoji });
+    }
+  }, []);
+
+  const emitEditMessage = useCallback((messageId, text) => {
+    if (socketRef.current && messageId && text != null) {
+      socketRef.current.emit('message:edit', { messageId, text });
+    }
+  }, []);
+
+  const emitUnsendMessage = useCallback((messageId) => {
+    if (socketRef.current && messageId) {
+      socketRef.current.emit('message:unsend', { messageId });
     }
   }, []);
 
@@ -111,6 +147,11 @@ export function SocketProvider({ children }) {
     joinConversation,
     leaveConversation,
     sendMessage,
+    emitMessageSeen,
+    emitMessageDelivered,
+    emitReaction,
+    emitEditMessage,
+    emitUnsendMessage,
     emitTypingStart,
     emitTypingStop,
     subscribe,

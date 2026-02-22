@@ -2,6 +2,10 @@ const chatService = require('./chat.service');
 const ApiResponse = require('../../utils/ApiResponse');
 const asyncHandler = require('../../utils/asyncHandler');
 const { uploadToCloudinary } = require('../../utils/uploadToCloudinary');
+const PendingChatFile = require('./models/pending-chat-file.model');
+
+const IMAGE_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+const VIDEO_MIMES = ['video/mp4', 'video/x-matroska', 'video/avi', 'video/quicktime', 'video/webm'];
 
 const createConversation = asyncHandler(async (req, res) => {
   const { type = 'direct', participants } = req.body;
@@ -46,16 +50,62 @@ const getMessages = asyncHandler(async (req, res) => {
   );
 });
 
-/** POST /upload — multipart file (image). Returns { url } for use in image messages. */
+/** POST /upload — multipart field "file". Images → Cloudinary; videos/documents → store buffer in MongoDB, return id. */
 const uploadChatMedia = asyncHandler(async (req, res) => {
-  if (!req.file || !req.file.buffer) {
+  if (!req.file) {
     return res.status(400).json(new ApiResponse(400, null, 'No file uploaded'));
   }
-  const result = await uploadToCloudinary(req.file.buffer, {
-    folder: 'krishiconnect/chat',
-    resourceType: 'image',
+  const file = req.file;
+  const buffer = file.buffer;
+  const mimetype = file.mimetype || '';
+  const originalname = file.originalname || 'file';
+
+  if (IMAGE_MIMES.includes(mimetype)) {
+    const result = await uploadToCloudinary(buffer, {
+      folder: 'krishiconnect/chat',
+      resourceType: 'image',
+    });
+    return res.status(200).json(
+      new ApiResponse(200, { url: result.url, publicId: result.publicId, type: 'image' }, 'Upload successful')
+    );
+  }
+
+  if (VIDEO_MIMES.includes(mimetype)) {
+    const doc = await PendingChatFile.create({
+      buffer,
+      contentType: mimetype,
+      filename: originalname,
+      size: file.size,
+      uploadedBy: req.user._id,
+    });
+    return res.status(200).json(
+      new ApiResponse(200, {
+        id: doc._id.toString(),
+        type: 'video',
+        contentType: mimetype,
+        filename: originalname,
+        size: file.size,
+      }, 'Upload successful')
+    );
+  }
+
+  // document (e.g. PDF)
+  const doc = await PendingChatFile.create({
+    buffer,
+    contentType: mimetype,
+    filename: originalname,
+    size: file.size,
+    uploadedBy: req.user._id,
   });
-  res.status(200).json(new ApiResponse(200, { url: result.url }, 'Upload successful'));
+  return res.status(200).json(
+    new ApiResponse(200, {
+      id: doc._id.toString(),
+      type: 'document',
+      contentType: mimetype,
+      filename: originalname,
+      size: file.size,
+    }, 'Upload successful')
+  );
 });
 
 module.exports = {

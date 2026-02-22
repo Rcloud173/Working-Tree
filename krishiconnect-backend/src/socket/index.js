@@ -41,13 +41,39 @@ function initializeSocket(server) {
   io.on('connection', (socket) => {
     logger.info('User connected:', socket.userId);
     socket.join(socket.userId);
+    socket.broadcast.emit('user:online', { userId: socket.userId });
 
     socket.on('conversation:join', (payload) => {
-      chatHandlers.handleConversationJoin(socket, payload?.conversationId);
+      chatHandlers.handleConversationJoin(io, socket, payload?.conversationId);
+    });
+
+    socket.on('conversation:leave', (payload) => {
+      const conversationId = payload?.conversationId;
+      if (conversationId) socket.leave(conversationId);
     });
 
     socket.on('message:send', (data) => {
       chatHandlers.handleMessageSend(io, socket, data);
+    });
+
+    socket.on('message:seen', (conversationId) => {
+      chatHandlers.handleMessageSeen(io, socket, conversationId);
+    });
+
+    socket.on('message:delivered', (data) => {
+      chatHandlers.handleMessageDelivered(io, socket, data);
+    });
+
+    socket.on('message:reaction', (data) => {
+      chatHandlers.handleMessageReaction(io, socket, data);
+    });
+
+    socket.on('message:edit', (data) => {
+      chatHandlers.handleMessageEdit(io, socket, data);
+    });
+
+    socket.on('message:unsend', (data) => {
+      chatHandlers.handleMessageUnsend(io, socket, data);
     });
 
     socket.on('typing:start', (payload) => {
@@ -60,6 +86,7 @@ function initializeSocket(server) {
 
     socket.on('disconnect', () => {
       logger.info('User disconnected:', socket.userId);
+      socket.broadcast.emit('user:offline', { userId: socket.userId });
     });
   });
 

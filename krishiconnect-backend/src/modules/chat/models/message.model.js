@@ -20,24 +20,41 @@ const messageSchema = new mongoose.Schema(
       required: true,
       default: 'text',
     },
-    /** Encrypted payload (content object). Decrypt with utils/encryption using iv. */
-    encryptedContent: {
-      type: String,
-      required: true,
+    text: { type: String, default: '' },
+    attachment: {
+      type: {
+        type: String,
+        enum: ['image', 'video', 'document'],
+      },
+      url: String,
+      publicId: String,
+      data: Buffer,
+      contentType: String,
+      filename: String,
+      size: Number,
     },
-    iv: {
-      type: String,
-      required: true,
-    },
+    /** Encrypted payload (optional; used when CHAT_ENCRYPTION_KEY is set). */
+    encryptedContent: { type: String },
+    iv: { type: String },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',
     },
+    reactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        emoji: { type: String, required: true },
+      },
+    ],
+    isEdited: { type: Boolean, default: false },
+    editedAt: { type: Date },
+    isUnsent: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['sent', 'delivered', 'read'],
       default: 'sent',
     },
+    deliveredTo: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     readBy: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

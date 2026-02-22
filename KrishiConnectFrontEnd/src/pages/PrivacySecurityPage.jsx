@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { Shield, UserX, Loader, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -9,7 +9,6 @@ import {
 } from '../hooks/usePrivacySecurity';
 import ToggleSetting from '../components/privacy-security/ToggleSetting';
 import BlockedUsersList from '../components/privacy-security/BlockedUsersList';
-import Enable2FAModal from '../components/two-factor/Enable2FAModal';
 
 // ---------------------------------------------------------------------------
 // Section card (matches Settings page style)
@@ -133,8 +132,6 @@ export default function PrivacySecurityPage() {
     onSuccess: () => toast.success('User unblocked'),
   });
 
-  const [enable2FAModalOpen, setEnable2FAModalOpen] = useState(false);
-
   const handleRetry = useCallback(() => {
     refetchPrivacy();
     refetchBlocked();
@@ -142,19 +139,10 @@ export default function PrivacySecurityPage() {
 
   const handleToggleTwoFactor = useCallback(
     (value) => {
-      if (value) {
-        setEnable2FAModalOpen(true);
-        return;
-      }
-      updatePrivacy.mutate({ twoFactorEnabled: false });
+      updatePrivacy.mutate({ twoFactorEnabled: value });
     },
     [updatePrivacy]
   );
-
-  const handleEnable2FASuccess = useCallback(() => {
-    refetchPrivacy();
-    toast.success('Two-factor authentication enabled');
-  }, [refetchPrivacy]);
 
   const handleToggleActivityStatus = useCallback(
     (value) => {
@@ -309,12 +297,6 @@ export default function PrivacySecurityPage() {
               />
             </div>
           </SectionCard>
-
-          <Enable2FAModal
-            open={enable2FAModalOpen}
-            onClose={() => setEnable2FAModalOpen(false)}
-            onSuccess={handleEnable2FASuccess}
-          />
 
           {/* Blocked users card */}
           <SectionCard>

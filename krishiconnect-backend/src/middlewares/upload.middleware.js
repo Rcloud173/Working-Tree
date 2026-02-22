@@ -1,6 +1,6 @@
 const multer = require('multer');
 const ApiError = require('../utils/ApiError');
-const { MAX_FILE_SIZE, MAX_FILES, PROFILE_PIC_MAX_SIZE, BACKGROUND_MAX_SIZE } = require('../config/constants');
+const { MAX_FILE_SIZE, MAX_FILES, PROFILE_PIC_MAX_SIZE, BACKGROUND_MAX_SIZE, CHAT_UPLOAD_MAX_SIZE } = require('../config/constants');
 
 const storage = multer.memoryStorage();
 
@@ -109,9 +109,43 @@ const uploadSingleBackground = (fieldName) => (req, res, next) => {
   });
 };
 
+// Chat: images (jpeg, jpg, png, gif, webp, svg), videos (mp4, mkv, avi, mov, webm), documents/PDF. Field name "file".
+const chatFileFilter = (req, file, cb) => {
+  const allowedImages = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+  const allowedVideos = ['video/mp4', 'video/x-matroska', 'video/avi', 'video/quicktime', 'video/webm'];
+  const allowedDocs = ['application/pdf'];
+  const allowed = [...allowedImages, ...allowedVideos, ...allowedDocs];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new ApiError(400, 'Invalid file type. Allowed: images (JPEG, PNG, GIF, WebP, SVG), videos (MP4, MKV, AVI, MOV, WebM), PDF.'), false);
+  }
+};
+
+const uploadChatFile = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: chatFileFilter,
+  limits: { fileSize: CHAT_UPLOAD_MAX_SIZE, files: 1 },
+});
+
+const uploadSingleChatFile = (fieldName) => (req, res, next) => {
+  const uploadHandler = uploadChatFile.single(fieldName);
+  uploadHandler(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return next(new ApiError(400, 'File too large. Maximum size is 100 MB.'));
+      }
+      return next(new ApiError(400, err.message));
+    }
+    if (err) return next(err);
+    next();
+  });
+};
+
 module.exports = {
   uploadSingle,
   uploadMultiple,
   uploadSingleProfilePic,
   uploadSingleBackground,
+  uploadSingleChatFile,
 };

@@ -23,7 +23,9 @@ const DEFAULT_PROFILE_PHOTO = 'https://images.unsplash.com/photo-1507003211169-0
  */
 export function mapUserToProfile(raw, currentUserId) {
   if (!raw) return null;
-  const locationParts = [raw.location?.state, raw.location?.district, raw.location?.village].filter(Boolean);
+  // Display as "State, City" (state first, then city). Backend stores location.state, location.city.
+  // Note: Existing records stored as "City, City" or in wrong order may need a one-time migration.
+  const locationParts = [raw.location?.state, raw.location?.city].filter(Boolean);
   const locationStr = locationParts.length ? locationParts.join(', ') : null;
   const joinedDate = raw.createdAt
     ? new Date(raw.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -40,11 +42,13 @@ export function mapUserToProfile(raw, currentUserId) {
   return {
     _id: raw._id,
     name: raw.name || 'User',
+    email: raw.email || '',
     profilePhoto: profilePhotoUrl,
     coverPhoto: typeof coverPhoto === 'string' && coverPhoto.startsWith('linear-gradient') ? undefined : coverPhoto,
     coverPreset: typeof coverPhoto === 'string' && coverPhoto.startsWith('linear') ? coverPhoto : null,
     headline: raw.bio ? raw.bio.split('\n')[0].slice(0, 80) : '',
     location: locationStr,
+    locationObject: raw.location || null,
     bio: raw.bio || '',
     followersCount: stats.followersCount ?? 0,
     followingCount: stats.followingCount ?? 0,

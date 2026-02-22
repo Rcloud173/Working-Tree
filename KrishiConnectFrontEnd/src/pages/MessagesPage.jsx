@@ -2,46 +2,51 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  MessageSquare, Search, Send, Phone, Video, MoreHorizontal, ArrowLeft,
-  Check, CheckCheck, Image, Paperclip, Smile, Loader, AlertCircle,
-  RefreshCw
+  MessageSquare, Phone, Video, MoreHorizontal, ArrowLeft, Loader,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { chatService } from '../services/chat.service';
 import { useSocket } from '../context/SocketContext';
+import { ConversationList, MessageBubble as MessageBubbleComponent, MessageInput } from '../components/chat';
 
 const EMOJI_LIST = ['😀','😊','😂','❤️','👍','🙏','🌾','👋','😅','🔥','✅','💬','🎉','🙂','😎','🤝','💪','🌱','🍅','🥕'];
+
+const CHAT_FILE_MAX_BYTES = 100 * 1024 * 1024; // 100MB
 
 const formatTime = (dateStr) => {
   const d = new Date(dateStr);
   const now = new Date();
   const diffMs = now - d;
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'now';
+  if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m`;
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return d.toLocaleDateString('en-IN', { weekday: 'long' }); // Monday, Tuesday...
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
 // Map backend conversation to list item shape (other participant, lastMessage text/time).
-function mapConversation(conv, currentUserId) {
+function mapConversation(conv, currentUserId, onlineUserIds = new Set()) {
   const other = conv.participants?.find((p) => String(p.user?._id ?? p.user) !== String(currentUserId));
   const user = other?.user ?? other;
+  const participantId = user?._id ?? user;
   const lastSenderId = conv.lastMessage?.sender ? (conv.lastMessage.sender._id ?? conv.lastMessage.sender) : null;
   return {
     _id: conv._id,
     participant: {
-      _id: user?._id ?? user,
+      _id: participantId,
       name: user?.name ?? 'User',
       avatar: user?.avatar ?? user?.profilePhoto,
       specialty: user?.headline ?? '',
-      online: false,
+      online: onlineUserIds.has(String(participantId)),
     },
     lastMessage: conv.lastMessage?.text ?? '',
     lastMessageTime: conv.lastMessage?.sentAt ? formatTime(conv.lastMessage.sentAt) : '',
-    unreadCount: 0,
+    unreadCount: conv.unreadCount ?? 0,
     lastMessageSenderId: lastSenderId ?? null,
   };
 }
@@ -51,15 +56,27 @@ function mapMessage(msg, currentUserId) {
   const senderId = msg.sender?._id ?? msg.sender ?? msg.senderId;
   const isImage = msg.type === 'image';
   const content = isImage
-    ? (msg.content ?? {})
-    : (typeof msg.content === 'object' && msg.content?.text != null ? msg.content.text : (msg.content ?? ''));
+    ? (msg.content ?? msg.attachment ?? {})
+    : (typeof msg.content === 'object' && msg.content?.text != null ? msg.content : (msg.content ?? ''));
+  const isReceived = String(senderId) !== String(currentUserId);
+  let status = msg.status ?? 'sent';
+  if (isReceived && msg.readBy?.some((r) => String(r.user ?? r) === String(currentUserId))) status = 'read';
+  else if (isReceived && msg.deliveredTo?.some((id) => String(id) === String(currentUserId))) status = 'delivered';
   return {
     _id: msg._id,
     senderId: String(senderId),
     content,
     type: msg.type || 'text',
     timestamp: msg.createdAt ?? msg.timestamp,
-    status: msg.status ?? 'sent',
+    status,
+    replyTo: msg.replyTo,
+    reactions: msg.reactions ?? [],
+    isEdited: msg.isEdited,
+    editedAt: msg.editedAt,
+    isUnsent: msg.isUnsent,
+    attachment: msg.attachment,
+    readBy: msg.readBy,
+    deliveredTo: msg.deliveredTo,
   };
 }
 
@@ -76,71 +93,11 @@ const groupMessagesByDate = (messages) => {
   return groups;
 };
 
-// ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
-const ConversationItem = ({ convo, isActive, onClick }) => (
-  <button onClick={() => onClick(convo)}
-    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left hover:bg-gray-50 dark:hover:bg-gray-700 ${isActive ? 'bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800' : ''}`}>
-    <div className="relative flex-shrink-0">
-      <img src={convo.participant.avatar} alt={convo.participant.name}
-        className={`w-12 h-12 rounded-full object-cover border-2 ${isActive ? 'border-green-400 dark:border-green-500' : 'border-gray-100 dark:border-gray-600'}`} />
-      {convo.participant.online && (
-        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-      )}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center justify-between">
-        <p className={`text-sm font-bold truncate ${isActive ? 'text-green-800 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>{convo.participant.name}</p>
-        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-1">{convo.lastMessageTime}</span>
-      </div>
-      <div className="flex items-center justify-between mt-0.5">
-        <p className={`text-xs truncate max-w-[140px] ${convo.unreadCount > 0 ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}>
-          {convo.lastMessageSenderId === 'current-user' && <span className="text-gray-400 dark:text-gray-500">You: </span>}
-          {convo.lastMessage}
-        </p>
-        {convo.unreadCount > 0 && (
-          <span className="ml-1 px-1.5 py-0.5 bg-green-600 text-white text-xs rounded-full font-bold flex-shrink-0 min-w-[18px] text-center">{convo.unreadCount}</span>
-        )}
-      </div>
-    </div>
-  </button>
-);
-
-const MessageBubble = ({ message, isMine }) => {
-  const isImage = message.type === 'image' && message.content?.url;
-  return (
-    <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-2`}>
-      <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
-        isMine
-          ? 'bg-green-600 text-white rounded-br-sm'
-          : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-600 rounded-bl-sm'
-      }`}>
-        {isImage ? (
-          <a href={message.content.url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden">
-            <img src={message.content.url} alt="Shared" className="max-w-full max-h-64 object-contain rounded-lg" />
-          </a>
-        ) : (
-          <p>{typeof message.content === 'string' ? message.content : message.content?.text ?? ''}</p>
-        )}
-        <div className={`flex items-center gap-1 justify-end mt-1 ${isMine ? 'opacity-70' : 'opacity-50'}`}>
-          <span className="text-xs">{formatTime(message.timestamp)}</span>
-          {isMine && (
-            message.status === 'read' ? <CheckCheck size={12} className="text-green-200" /> :
-            message.status === 'delivered' ? <CheckCheck size={12} /> :
-            <Check size={12} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const TypingIndicator = () => (
   <div className="flex justify-start mb-2">
     <div className="bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
       <div className="flex items-center gap-1">
-        {[0, 150, 300].map(delay => (
+        {[0, 150, 300].map((delay) => (
           <div key={delay} className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
         ))}
       </div>
@@ -151,12 +108,27 @@ const TypingIndicator = () => (
 // ============================================================================
 // MAIN MESSAGES PAGE
 // ============================================================================
+const TYPING_DEBOUNCE_MS = 1500;
+
 const MessagesPage = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?._id ?? null);
-  const { joinConversation, leaveConversation, sendMessage: socketSendMessage, emitTypingStart, emitTypingStop, subscribe, connected } = useSocket();
+  const {
+    joinConversation,
+    leaveConversation,
+    sendMessage: socketSendMessage,
+    emitMessageSeen,
+    emitMessageDelivered,
+    emitReaction,
+    emitEditMessage,
+    emitUnsendMessage,
+    emitTypingStart,
+    emitTypingStop,
+    subscribe,
+    connected,
+  } = useSocket();
 
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
@@ -169,17 +141,22 @@ const MessagesPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+  const [replyToMessage, setReplyToMessage] = useState(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const activeConvoIdRef = useRef(null);
   const imageInputRef = useRef(null);
   const attachInputRef = useRef(null);
+  const messagesScrollRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   activeConvoIdRef.current = activeConvo?._id;
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const emojiPickerRef = useRef(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
@@ -188,10 +165,10 @@ const MessagesPage = () => {
     setError(null);
     try {
       const { conversations: list } = await chatService.getConversations();
-      const mapped = (list || []).map((c) => mapConversation(c, currentUserId));
+      const mapped = (list || []).map((c) => mapConversation(c, currentUserId, new Set()));
       const openConv = location.state?.openConversation;
       const toSet = openConv
-        ? [mapConversation(openConv, currentUserId), ...mapped.filter((c) => String(c._id) !== String(openConv._id))]
+        ? [mapConversation(openConv, currentUserId, new Set()), ...mapped.filter((c) => String(c._id) !== String(openConv._id))]
         : mapped;
       setConversations(toSet);
       return toSet;
@@ -202,6 +179,17 @@ const MessagesPage = () => {
       setLoading(false);
     }
   }, [currentUserId, location]);
+
+  // Sync online status into conversation list when onlineUserIds changes
+  useEffect(() => {
+    if (onlineUserIds.size === 0) return;
+    setConversations((prev) =>
+      prev.map((c) => ({
+        ...c,
+        participant: { ...c.participant, online: onlineUserIds.has(String(c.participant?._id)) },
+      }))
+    );
+  }, [onlineUserIds]);
 
   useEffect(() => {
     loadConversations();
@@ -265,21 +253,28 @@ const MessagesPage = () => {
     setActiveConvo(convo);
     setShowSidebar(false);
     setMessagesLoading(true);
+    setHasMoreMessages(true);
     joinConversation(convo._id);
     try {
-      const { messages: msgs } = await chatService.getMessages(convo._id);
+      const { messages: msgs, pagination } = await chatService.getMessages(convo._id, { limit: 20 });
       setMessages((msgs || []).map((m) => mapMessage(m, currentUserId)).reverse());
+      setHasMoreMessages(!!(pagination?.nextPage ?? pagination?.hasNext));
     } catch {
       setMessages([]);
     } finally {
       setMessagesLoading(false);
     }
+    setConversations((prev) =>
+      prev.map((c) => (String(c._id) === String(convo._id) ? { ...c, unreadCount: 0 } : c))
+    );
   }, [activeConvo?._id, currentUserId, joinConversation, leaveConversation]);
 
   const handleSend = useCallback(() => {
     if (!messageInput.trim() || !activeConvo || sending) return;
     const content = messageInput.trim();
+    const replyToId = replyToMessage?._id ?? null;
     setMessageInput('');
+    setReplyToMessage(null);
     setSending(true);
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
@@ -289,18 +284,32 @@ const MessagesPage = () => {
       type: 'text',
       timestamp: new Date().toISOString(),
       status: 'sent',
+      replyTo: replyToMessage ? { text: replyToMessage.content?.text ?? replyToMessage.content, sender: { name: activeConvo.participant?.name } } : undefined,
     };
     setMessages((prev) => [...prev, optimisticMsg]);
-    socketSendMessage(activeConvo._id, 'text', content);
+    socketSendMessage(activeConvo._id, 'text', content, replyToId);
     setConversations((prev) =>
       prev.map((c) =>
         c._id === activeConvo._id
-          ? { ...c, lastMessage: content, lastMessageTime: 'now', lastMessageSenderId: String(currentUserId) }
+          ? { ...c, lastMessage: content, lastMessageTime: 'Just now', lastMessageSenderId: String(currentUserId) }
           : c
       )
     );
     setSending(false);
-  }, [messageInput, activeConvo, sending, currentUserId, socketSendMessage]);
+  }, [messageInput, activeConvo, sending, currentUserId, socketSendMessage, replyToMessage]);
+
+  useEffect(() => {
+    const unsubOnline = subscribe('user:online', ({ userId: id }) => {
+      if (id) setOnlineUserIds((prev) => (prev.has(id) ? prev : new Set([...prev, id])));
+    });
+    const unsubOffline = subscribe('user:offline', ({ userId: id }) => {
+      if (id) setOnlineUserIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    });
+    return () => {
+      unsubOnline();
+      unsubOffline();
+    };
+  }, [subscribe]);
 
   useEffect(() => {
     if (!activeConvo?._id) return;
@@ -315,8 +324,44 @@ const MessagesPage = () => {
           const withoutTemp = prev.filter((m) => !String(m._id).startsWith('temp-'));
           return [...withoutTemp, mapped];
         }
+        if (emitMessageDelivered && payload._id) emitMessageDelivered(payload._id);
         return [...prev, mapped];
       });
+    });
+    const unsubSeen = subscribe('message:seen', ({ conversationId, messageIds }) => {
+      if (String(conversationId) !== String(activeConvo._id)) return;
+      if (!messageIds?.length) return;
+      setMessages((prev) =>
+        prev.map((m) => (messageIds.includes(String(m._id)) ? { ...m, status: 'read' } : m))
+      );
+    });
+    const unsubDelivered = subscribe('message:delivered', ({ messageId }) => {
+      if (!messageId) return;
+      setMessages((prev) =>
+        prev.map((m) => (String(m._id) === String(messageId) ? { ...m, status: 'delivered' } : m))
+      );
+    });
+    const unsubReaction = subscribe('message:reaction', ({ messageId, message: updated }) => {
+      if (!messageId || !updated) return;
+      setMessages((prev) =>
+        prev.map((m) => (String(m._id) === String(messageId) ? { ...m, reactions: updated.reactions ?? m.reactions } : m))
+      );
+    });
+    const unsubEdit = subscribe('message:edit', ({ messageId, message: updated }) => {
+      if (!messageId || !updated) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          String(m._id) === String(messageId)
+            ? { ...m, content: { text: updated.text ?? m.content?.text }, isEdited: true }
+            : m
+        )
+      );
+    });
+    const unsubUnsend = subscribe('message:unsend', ({ messageId }) => {
+      if (!messageId) return;
+      setMessages((prev) =>
+        prev.map((m) => (String(m._id) === String(messageId) ? { ...m, isUnsent: true } : m))
+      );
     });
     const unsubTyping = subscribe('user:typing', ({ conversationId, userId }) => {
       if (conversationId === activeConvo._id && String(userId) !== String(currentUserId)) setIsTyping(true);
@@ -329,11 +374,16 @@ const MessagesPage = () => {
     });
     return () => {
       unsubNew();
+      unsubSeen();
+      unsubDelivered();
+      unsubReaction();
+      unsubEdit();
+      unsubUnsend();
       unsubTyping();
       unsubStopped();
       unsubErr();
     };
-  }, [activeConvo?._id, currentUserId, subscribe]);
+  }, [activeConvo?._id, currentUserId, subscribe, emitMessageDelivered]);
 
   const handleTypingChange = useCallback(() => {
     if (!activeConvo?._id) return;
@@ -342,7 +392,7 @@ const MessagesPage = () => {
     typingTimeoutRef.current = setTimeout(() => {
       emitTypingStop(activeConvo._id);
       typingTimeoutRef.current = null;
-    }, 2000);
+    }, TYPING_DEBOUNCE_MS);
   }, [activeConvo?._id, emitTypingStart, emitTypingStop]);
 
   useEffect(() => {
@@ -352,6 +402,29 @@ const MessagesPage = () => {
       if (id) leaveConversation(id);
     };
   }, [leaveConversation]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!activeConvo?._id || loadingOlder || !hasMoreMessages || messages.length === 0) return;
+    const oldestId = messages[0]._id;
+    if (String(oldestId).startsWith('temp-')) return;
+    setLoadingOlder(true);
+    try {
+      const { messages: older, pagination } = await chatService.getMessages(activeConvo._id, { before: oldestId, limit: 20 });
+      const mapped = (older || []).map((m) => mapMessage(m, currentUserId)).reverse();
+      setMessages((prev) => [...mapped, ...prev]);
+      setHasMoreMessages(!!(mapped.length >= 20 || pagination?.hasNext));
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [activeConvo?._id, currentUserId, loadingOlder, hasMoreMessages, messages]);
+
+  const handleScrollMessages = useCallback(
+    (e) => {
+      const { scrollTop } = e.target;
+      if (scrollTop < 100 && hasMoreMessages && !loadingOlder) loadOlderMessages();
+    },
+    [hasMoreMessages, loadingOlder, loadOlderMessages]
+  );
 
   const handleSearch = (q) => {
     setSearchQuery(q);
@@ -384,9 +457,14 @@ const MessagesPage = () => {
 
   const sendImageFile = useCallback(async (file) => {
     if (!file || !activeConvo || !file.type.startsWith('image/')) return;
+    if (file.size > CHAT_FILE_MAX_BYTES) {
+      toast.error('File is too large. Maximum size is 100 MB.');
+      return;
+    }
     setUploadingImage(true);
     try {
-      const url = await chatService.uploadMedia(file);
+      const result = await chatService.uploadMedia(file);
+      const url = result?.url ?? result;
       if (url) {
         socketSendMessage(activeConvo._id, 'image', { url });
         const optimisticMsg = {
@@ -415,6 +493,49 @@ const MessagesPage = () => {
     }
   }, [activeConvo, currentUserId, socketSendMessage]);
 
+  const sendFileAttachment = useCallback(async (file) => {
+    if (!file || !activeConvo) return;
+    if (file.size > CHAT_FILE_MAX_BYTES) {
+      toast.error('File is too large. Maximum size is 100 MB.');
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const result = await chatService.uploadMedia(file);
+      if (result?.id) {
+        socketSendMessage(activeConvo._id, 'file', {
+          id: result.id,
+          type: result.type,
+          filename: result.filename,
+          contentType: result.contentType,
+          size: result.size,
+        });
+        const optimisticMsg = {
+          _id: `temp-file-${Date.now()}`,
+          senderId: String(currentUserId),
+          content: { id: result.id, type: result.type, filename: result.filename },
+          type: 'file',
+          timestamp: new Date().toISOString(),
+          status: 'sent',
+        };
+        setMessages((prev) => [...prev, optimisticMsg]);
+        setConversations((prev) =>
+          prev.map((c) =>
+            c._id === activeConvo._id
+              ? { ...c, lastMessage: result.type === 'video' ? '🎬 Video' : '📎 File', lastMessageTime: 'now', lastMessageSenderId: String(currentUserId) }
+              : c
+          )
+        );
+      } else {
+        toast.error('Upload failed');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Upload failed');
+    } finally {
+      setUploadingImage(false);
+    }
+  }, [activeConvo, currentUserId, socketSendMessage]);
+
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -425,11 +546,15 @@ const MessagesPage = () => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file || !activeConvo) return;
+    if (file.size > CHAT_FILE_MAX_BYTES) {
+      toast.error('File is too large. Maximum size is 100 MB.');
+      return;
+    }
     if (file.type.startsWith('image/')) {
       sendImageFile(file);
       return;
     }
-    toast.error('Document upload coming soon. Use the image button for photos.');
+    sendFileAttachment(file);
   };
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
@@ -449,53 +574,21 @@ const MessagesPage = () => {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Conversations Sidebar */}
-          <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 transition-colors duration-200`}>
-            {/* Search */}
-            <div className="p-3 border-b border-gray-50 dark:border-gray-700">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                <input type="search" value={searchQuery} onChange={(e) => handleSearch(e.target.value)}
-                  placeholder={t('messages.searchPlaceholder')}
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 focus:bg-white dark:focus:bg-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition" />
-              </div>
-            </div>
-
-            {/* Conversation List */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-              {loading ? (
-                <div className="space-y-2 p-2">
-                  {[1,2,3,4,5].map(i => (
-                    <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3.5 bg-gray-200 dark:bg-gray-600 rounded w-3/4" />
-                        <div className="h-3 bg-gray-100 dark:bg-gray-600 rounded w-1/2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : error ? (
-                <div className="p-6 text-center">
-                  <AlertCircle size={32} className="text-red-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
-                  <button onClick={loadConversations} className="mt-3 text-xs text-green-600 dark:text-green-400 font-semibold hover:underline flex items-center gap-1 mx-auto">
-                    <RefreshCw size={12} /> Retry
-                  </button>
-                </div>
-              ) : conversations.length === 0 ? (
-                <div className="p-8 text-center">
-                  <div className="text-4xl mb-3">💬</div>
-                  <p className="font-semibold text-gray-700 dark:text-gray-300 text-sm">{t('messages.empty')}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('messages.emptyHint')}</p>
-                </div>
-              ) : (
-                conversations.map(convo => (
-                  <ConversationItem key={convo._id} convo={convo}
-                    isActive={activeConvo?._id === convo._id}
-                    onClick={handleSelectConvo} />
-                ))
-              )}
-            </div>
+          <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 flex-shrink-0 transition-colors duration-200`}>
+            <ConversationList
+              conversations={conversations}
+              loading={loading}
+              error={error}
+              searchQuery={searchQuery}
+              onSearchChange={handleSearch}
+              activeConvoId={activeConvo?._id}
+              onSelectConversation={handleSelectConvo}
+              onRetry={loadConversations}
+              currentUserId={currentUserId}
+              searchPlaceholder={t('messages.searchPlaceholder')}
+              emptyMessage={t('messages.empty')}
+              emptyHint={t('messages.emptyHint')}
+            />
           </div>
 
           {/* Chat Area */}
@@ -513,23 +606,28 @@ const MessagesPage = () => {
                   <button onClick={() => setShowSidebar(true)} className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400">
                     <ArrowLeft size={18} />
                   </button>
-                  <div className="relative">
-                    <img src={activeConvo.participant.avatar} alt={activeConvo.participant.name}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-green-100 dark:border-green-800" />
-                    {activeConvo.participant.online && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{activeConvo.participant.name}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {activeConvo.participant.online ? (
-                        <span className="text-green-600 dark:text-green-400 font-medium">● Online</span>
-                      ) : (
-                        activeConvo.participant.specialty
+                  <button
+                    onClick={() => activeConvo.participant?._id && navigate(`/profile/${activeConvo.participant._id}`)}
+                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img src={activeConvo.participant.avatar} alt={activeConvo.participant.name}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-green-100 dark:border-green-800" />
+                      {activeConvo.participant.online && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
                       )}
-                    </p>
-                  </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">{activeConvo.participant.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {activeConvo.participant.online ? (
+                          <span className="text-green-600 dark:text-green-400 font-medium">Active now</span>
+                        ) : (
+                          <span>Active recently</span>
+                        )}
+                      </p>
+                    </div>
+                  </button>
                   <div className="flex items-center gap-1">
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition">
                       <Phone size={16} />
@@ -544,7 +642,12 @@ const MessagesPage = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-4" onScroll={handleScrollMessages}>
+                  {loadingOlder && (
+                    <div className="flex justify-center py-2">
+                      <Loader size={20} className="animate-spin text-green-600 dark:text-green-400" />
+                    </div>
+                  )}
                   {messagesLoading ? (
                     <div className="flex items-center justify-center h-full">
                       <Loader size={24} className="text-green-600 animate-spin" />
@@ -564,8 +667,19 @@ const MessagesPage = () => {
                             <span className="text-xs text-gray-400 dark:text-gray-500 font-medium px-2">{date}</span>
                             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
                           </div>
-                          {msgs.map(msg => (
-                            <MessageBubble key={msg._id} message={msg} isMine={String(msg.senderId) === String(currentUserId)} />
+                          {msgs.map((msg) => (
+                            <MessageBubbleComponent
+                              key={msg._id}
+                              message={msg}
+                              isMine={String(msg.senderId) === String(currentUserId)}
+                              currentUserId={currentUserId}
+                              formatTime={formatTime}
+                              onReply={setReplyToMessage}
+                              onReact={(messageId, emoji) => emitReaction(messageId, emoji)}
+                              onEdit={(messageId, text) => emitEditMessage(messageId, text)}
+                              onUnsend={(messageId) => emitUnsendMessage(messageId)}
+                              onForward={() => toast('Forward to conversation — coming soon')}
+                            />
                           ))}
                         </div>
                       ))}
@@ -576,80 +690,30 @@ const MessagesPage = () => {
                 </div>
 
                 {/* Input Area */}
-                <div className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex-shrink-0 transition-colors duration-200">
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
+                <div className="flex-shrink-0" ref={emojiPickerRef}>
+                  <MessageInput
+                    value={messageInput}
+                    onChange={setMessageInput}
+                    onSend={handleSend}
+                    onAttach={sendFileAttachment}
+                    onImageSelect={(file) => sendImageFile(file)}
+                    replyPreview={replyToMessage ? { _id: replyToMessage._id, text: typeof replyToMessage.content === 'string' ? replyToMessage.content : replyToMessage.content?.text, sender: { name: activeConvo.participant?.name } } : null}
+                    onDismissReply={() => setReplyToMessage(null)}
+                    placeholder={t('messages.typePlaceholder')}
+                    sendDisabled={sending}
+                    sending={sending}
+                    showEmojiPicker={showEmojiPicker}
+                    onToggleEmojiPicker={() => setShowEmojiPicker((p) => !p)}
+                    onEmojiSelect={insertEmoji}
+                    emojiList={EMOJI_LIST}
+                    maxFileBytes={CHAT_FILE_MAX_BYTES}
+                    onFileTooLarge={() => toast.error('File is too large. Maximum size is 100 MB.')}
+                    imageInputRef={imageInputRef}
+                    attachInputRef={attachInputRef}
+                    inputRef={inputRef}
+                    onKeyDown={handleKeyDown}
+                    onTyping={handleTypingChange}
                   />
-                  <input
-                    ref={attachInputRef}
-                    type="file"
-                    accept="image/*,.pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={handleAttachChange}
-                  />
-                  <div className="flex items-end gap-2 relative">
-                    <button
-                      type="button"
-                      onClick={() => attachInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition flex-shrink-0 mb-0.5 disabled:opacity-50"
-                      title="Attach file"
-                    >
-                      <Paperclip size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition flex-shrink-0 mb-0.5 disabled:opacity-50"
-                      title="Send photo"
-                    >
-                      {uploadingImage ? <Loader size={18} className="animate-spin" /> : <Image size={18} />}
-                    </button>
-                    <div className="flex-1 relative" ref={emojiPickerRef}>
-                      <textarea
-                        ref={inputRef}
-                        rows={1}
-                        value={messageInput}
-                        onChange={(e) => { setMessageInput(e.target.value); handleTypingChange(); }}
-                        onKeyDown={handleKeyDown}
-                        placeholder={t('messages.typePlaceholder')}
-                        className="w-full px-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 resize-none transition leading-relaxed max-h-28 overflow-y-auto placeholder-gray-500 dark:placeholder-gray-400"
-                        style={{ minHeight: '42px' }}
-                      />
-                      {showEmojiPicker && (
-                        <div className="absolute bottom-full left-0 mb-1 p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-10 flex flex-wrap gap-1 max-w-[240px]">
-                          {EMOJI_LIST.map((emo) => (
-                            <button
-                              key={emo}
-                              type="button"
-                              className="w-8 h-8 text-lg hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition"
-                              onClick={() => insertEmoji(emo)}
-                            >
-                              {emo}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker((prev) => !prev)}
-                      className={`p-2 rounded-xl transition flex-shrink-0 mb-0.5 ${showEmojiPicker ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'}`}
-                      title="Emoji"
-                    >
-                      <Smile size={18} />
-                    </button>
-                    <button onClick={handleSend} disabled={(!messageInput.trim() && !uploadingImage) || sending}
-                      className="p-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-40 transition flex-shrink-0 mb-0.5 shadow-sm hover:shadow-md">
-                      {sending ? <Loader size={16} className="animate-spin" /> : <Send size={16} />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">Press Enter to send • Shift+Enter for new line</p>
                 </div>
               </>
             )}

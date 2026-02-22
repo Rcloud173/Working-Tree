@@ -37,73 +37,161 @@ const formatTimeAgo = (dateStr) => {
 // ============================================================================
 // EDIT PROFILE MODAL
 // ============================================================================
+/** Pre-fill State and City from existing location (string "State, City" or locationObject). */
+function getStateAndCityFromUser(user) {
+  const loc = user?.locationObject;
+  if (loc && (loc.state != null || loc.city != null)) {
+    return { state: loc.state ?? '', city: loc.city ?? '' };
+  }
+  const str = user?.location;
+  if (typeof str === 'string' && str.trim()) {
+    const parts = str.split(',').map((s) => s.trim());
+    const state = parts[0] ?? '';
+    const city = parts[1] ?? '';
+    return { state, city };
+  }
+  return { state: '', city: '' };
+}
+
 const EditProfileModal = ({ user, currentUserId, onClose, onSaved }) => {
-  const [form, setForm] = useState({
-    name: user.name,
-    headline: user.headline,
-    location: user.location,
-    bio: user.bio,
-    education: user.education,
-    experience: user.experience,
-    website: user.website,
-    phone: user.phone,
-  });
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      const raw = await userService.updateProfile({
-        name: form.name,
-        bio: form.bio,
-        location: form.location || undefined,
-      });
-      const mapped = mapUserToProfile(raw, currentUserId);
-      onSaved(mapped);
-      if (typeof authStore.setUser === 'function') authStore.setUser(mapped);
-      onClose();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err?.message || 'Failed to update profile');
-    } finally { setLoading(false); }
+  const getInitialForm = () => {
+    const { state, city } = getStateAndCityFromUser(user);
+    return {
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      bio: user?.bio ?? '',
+      state,
+      city,
+    };
   };
 
-  const fields = [
-    { key: 'name', label: 'Full Name', type: 'text' },
-    { key: 'headline', label: 'Headline', type: 'text' },
-    { key: 'location', label: 'Location', type: 'text' },
-    { key: 'website', label: 'Website', type: 'text' },
-    { key: 'phone', label: 'Phone', type: 'tel' },
-    { key: 'education', label: 'Education', type: 'text' },
-    { key: 'experience', label: 'Experience', type: 'text' },
-  ];
+  const [form, setForm] = useState(getInitialForm);
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  React.useEffect(() => {
+    setForm(getInitialForm());
+    setSubmitError(null);
+  }, [user?.name, user?.email, user?.bio, user?.location, user?.locationObject]);
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setSubmitError(null);
+  };
+
+  const handleSave = async () => {
+    setSubmitError(null);
+    setLoading(true);
+    try {
+      const stateVal = (form.state ?? '').trim();
+      const cityVal = (form.city ?? '').trim();
+      const locationObj =
+        stateVal || cityVal
+          ? { state: stateVal || undefined, city: cityVal || undefined, country: 'India' }
+          : undefined;
+
+      const payload = {
+        name: (form.name ?? '').trim() || undefined,
+        bio: (form.bio ?? '').trim() || undefined,
+        ...(form.email !== undefined && { email: (form.email ?? '').trim() || undefined }),
+        ...(locationObj && { location: locationObj }),
+      };
+
+      const raw = await userService.updateProfile(payload);
+      const mapped = mapUserToProfile(raw, currentUserId);
+      onSaved(mapped);
+      if (typeof authStore.setUser === 'function') {
+        authStore.setUser(mapped);
+      }
+      toast.success('Profile updated successfully');
+      onClose();
+    } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Failed to update profile';
+      setSubmitError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl dark:shadow-none border border-transparent dark:border-gray-700">
         <div className="sticky top-0 bg-white dark:bg-gray-800 flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 rounded-t-2xl z-10">
-          <h2 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2"><Edit3 size={18} className="text-green-600 dark:text-green-400" /> Edit Profile</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 id="edit-profile-title" className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Edit3 size={18} className="text-green-600 dark:text-green-400" /> Edit Profile
+          </h2>
+          <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400" aria-label="Close">
+            <X size={18} />
+          </button>
         </div>
         <div className="p-5 space-y-4">
-          {fields.map(({ key, label, type }) => (
-            <div key={key}>
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
-              <input type={type} value={form[key] || ''} onChange={(e) => handleChange(key, e.target.value)}
-                className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 transition" />
+          {submitError && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-700 dark:text-red-300 text-sm">
+              <AlertCircle size={18} className="flex-shrink-0" />
+              <span>{submitError}</span>
             </div>
-          ))}
+          )}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">Full Name</label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              placeholder="Your name"
+              className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 transition"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              placeholder="you@example.com"
+              className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 transition"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">State</label>
+              <input
+                type="text"
+                value={form.state}
+                onChange={(e) => handleChange('state', e.target.value)}
+                placeholder="e.g. Maharashtra"
+                className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 transition"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">City</label>
+              <input
+                type="text"
+                value={form.city}
+                onChange={(e) => handleChange('city', e.target.value)}
+                placeholder="e.g. Mumbai"
+                className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 transition"
+              />
+            </div>
+          </div>
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">Bio</label>
-            <textarea value={form.bio || ''} onChange={(e) => handleChange('bio', e.target.value)}
-              rows={4} className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 resize-none transition" />
+            <textarea
+              value={form.bio}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              rows={4}
+              maxLength={500}
+              placeholder="Tell others about yourself..."
+              className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 resize-none transition"
+            />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{form.bio.length}/500</p>
           </div>
         </div>
         <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-5 border-t border-gray-100 dark:border-gray-700 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
-          <button onClick={handleSave} disabled={loading}
-            className="flex-1 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-40 transition flex items-center justify-center gap-2">
+          <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            Cancel
+          </button>
+          <button type="button" onClick={handleSave} disabled={loading} className="flex-1 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-40 transition flex items-center justify-center gap-2">
             {loading ? <Loader size={15} className="animate-spin" /> : <Check size={15} />}
             {loading ? 'Saving...' : 'Save Changes'}
           </button>

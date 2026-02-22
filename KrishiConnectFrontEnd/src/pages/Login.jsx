@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +6,6 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service';
 import { useAuthStore } from '../store/authStore';
-import Login2FAVerificationModal from '../components/two-factor/Login2FAVerificationModal';
 
 const schema = z
   .object({
@@ -30,22 +29,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const [login2FA, setLogin2FA] = useState({ open: false, userId: null });
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
-
-  const handle2FASuccess = useCallback(
-    (user, tokens) => {
-      const accessToken = tokens?.accessToken ?? tokens?.access_token;
-      const refreshToken = tokens?.refreshToken ?? tokens?.refresh_token;
-      if (typeof setAuth === 'function' && user && accessToken) {
-        setAuth(user, accessToken, refreshToken ?? null);
-        toast.success('🎉 Login successful!');
-        navigate('/profile', { replace: true });
-      }
-    },
-    [setAuth, navigate]
-  );
 
   const {
     register,
@@ -73,14 +58,6 @@ export default function Login() {
     try {
       const res = await authService.login(payload);
       const data = res.data?.data ?? res.data;
-      const requires2FA = data?.requires2FA === true;
-      const userId = data?.userId ?? data?.user?._id ?? data?.user?.id;
-
-      if (requires2FA && userId) {
-        setLogin2FA({ open: true, userId });
-        return;
-      }
-
       const user = data?.user;
       const tokens = data?.tokens ?? data?.token;
       const accessToken = tokens?.accessToken ?? tokens?.access_token;
@@ -373,13 +350,6 @@ export default function Login() {
           </p>
         </div>
       </div>
-
-      <Login2FAVerificationModal
-        open={login2FA.open}
-        userId={login2FA.userId}
-        onClose={() => setLogin2FA({ open: false, userId: null })}
-        onSuccess={handle2FASuccess}
-      />
 
       {/* Global animations */}
       <style>{`

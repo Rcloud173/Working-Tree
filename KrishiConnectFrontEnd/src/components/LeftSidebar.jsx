@@ -29,10 +29,10 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
     { id: 'profile', icon: User, labelKey: 'nav.profile', route: '/profile' },
   ];
 
-  // Determine active nav based on current route
+  // Determine active nav based on current route (pathname-driven)
   const getActiveNav = () => {
     const path = location.pathname;
-    if (path === '/') return 'home';
+    if (path === '/' || path === '/feed') return 'home';
     if (path.startsWith('/network')) return 'network';
     if (path.startsWith('/opportunities') || path.startsWith('/jobs')) return 'jobs';
     if (path.startsWith('/messages')) return 'messages';
@@ -41,6 +41,7 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
     if (path.startsWith('/market')) return 'market';
     if (path.startsWith('/crop-doctor')) return 'cropDoctor';
     if (path.startsWith('/profile')) return 'profile';
+    if (path.startsWith('/settings')) return 'settings';
     return 'home';
   };
 
@@ -100,7 +101,11 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
         <div className="p-3 border-t border-gray-100 dark:border-gray-700 space-y-1">
           <button
             onClick={() => navigate('/settings')}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition ${!open ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition ${!open ? 'justify-center' : ''} ${
+              activeNav === 'settings'
+                ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
           >
             <Settings size={19} />
             {open && <span className="text-sm">{t('nav.settings')}</span>}
@@ -196,7 +201,11 @@ const LeftSidebar = ({ open, setOpen, notificationCount = 0 }) => {
                 navigate('/settings');
                 setOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition ${
+                activeNav === 'settings'
+                  ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
             >
               <Settings size={19} />
               <span className="text-sm">{t('nav.settings')}</span>

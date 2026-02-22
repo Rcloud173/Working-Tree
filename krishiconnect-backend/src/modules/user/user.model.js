@@ -51,9 +51,11 @@ const userSchema = new mongoose.Schema(
       maxlength: 500,
     },
     location: {
+      city: String,
       state: String,
       district: String,
       village: String,
+      country: { type: String, default: 'India' },
       coordinates: {
         type: {
           type: String,
@@ -223,6 +225,13 @@ userSchema.index({ name: 'text' });
 userSchema.index({ 'location.state': 1, 'location.district': 1 });
 userSchema.index({ isExpert: 1, 'expertDetails.specialization': 1 });
 userSchema.index({ createdAt: -1 });
+
+// Networking recommendations: location-based + pagination
+userSchema.index({ 'location.city': 1, isActive: 1 });
+userSchema.index({ 'location.state': 1, isActive: 1 });
+userSchema.index({ 'location.country': 1, isActive: 1 });
+userSchema.index({ 'stats.followersCount': -1 });
+userSchema.index({ lastProfileUpdate: -1 });
 
 userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {

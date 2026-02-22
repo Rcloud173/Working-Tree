@@ -58,6 +58,7 @@ const updatePassword = async (userId, currentPassword, newPassword) => {
 const updateProfile = async (userId, updateData) => {
   const allowedFields = [
     'name',
+    'email',
     'bio',
     'location',
     'farmSize',
@@ -73,10 +74,16 @@ const updateProfile = async (userId, updateData) => {
     }
   });
 
+  if (Object.keys(filteredData).length > 0) {
+    filteredData.lastProfileUpdate = new Date();
+  }
+
   const user = await User.findByIdAndUpdate(userId, filteredData, {
     new: true,
     runValidators: true,
-  }).select('-password -refreshTokens -fcmTokens');
+  })
+    .select('-password -refreshTokens -fcmTokens')
+    .lean();
 
   return user;
 };
