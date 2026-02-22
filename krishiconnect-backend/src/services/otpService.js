@@ -2,8 +2,11 @@ const bcrypt = require('bcryptjs');
 const OTP = require('../modules/auth/otp.model');
 const User = require('../modules/user/user.model');
 const { sendEmailOnce } = require('./emailService');
-const { getRegistrationOTPTemplate, getPasswordResetOTPTemplate } = require('./emailTemplates');
+const { getRegistrationOTPTemplate, getPasswordResetOTPTemplate, get2FAOTPTemplate } = require('./emailTemplates');
 const { OTP_EXPIRY_SECONDS, OTP_MAX_ATTEMPTS } = require('../config/constants');
+
+const OTP_2FA_EXPIRY_SECONDS = 300; // 5 minutes for 2FA
+const OTP_2FA_RESEND_COOLDOWN_SECONDS = 30;
 const logger = require('../config/logger');
 
 function generateOTPCode() {
@@ -19,14 +22,17 @@ async function verifyOTPCode(otpCode, hashedOTP) {
 }
 
 async function generateAndSendOTP(userId, email, type, userName) {
-  if (!['registration', 'password_reset'].includes(type)) {
+  const allowedTypes = ['registration', 'password_reset', '2fa_enable', '2fa_login'];
+  if (!allowedTypes.includes(type)) {
     return { success: false, message: 'Invalid OTP type' };
   }
 
+  const is2FA = type === '2fa_enable' || type === '2fa_login';
+  const expirySec = is2FA ? OTP_2FA_EXPIRY_SECONDS : OTP_EXPIRY_SECONDS;
   const otpCode = generateOTPCode();
   const hashedOTP = await hashOTP(otpCode);
-  const expiryMinutes = Math.floor(OTP_EXPIRY_SECONDS / 60) || 10;
-  const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
+  const expiryMinutes = Math.floor(expirySec / 60) || (is2FA ? 5 : 10);
+  const expiresAt = new Date(Date.now() + expirySec * 1000);
 
   const otpRecord = await OTP.create({
     userId,
@@ -38,9 +44,14 @@ async function generateAndSendOTP(userId, email, type, userName) {
     verificationAttempts: 0,
   });
 
-  const emailTemplate = type === 'registration'
-    ? getRegistrationOTPTemplate(userName, otpCode, expiryMinutes)
-    : getPasswordResetOTPTemplate(userName, otpCode, expiryMinutes);
+  let emailTemplate;
+  if (type === 'registration') {
+    emailTemplate = getRegistrationOTPTemplate(userName, otpCode, expiryMinutes);
+  } else if (type === 'password_reset') {
+    emailTemplate = getPasswordResetOTPTemplate(userName, otpCode, expiryMinutes);
+  } else {
+    emailTemplate = get2FAOTPTemplate(userName, otpCode, expiryMinutes);
+  }
 
   const emailResult = await sendEmailOnce(
     email,
@@ -66,9 +77,69 @@ async function generateAndSendOTP(userId, email, type, userName) {
   return {
     success: true,
     otpId: otpRecord._id.toString(),
-    expiresIn: OTP_EXPIRY_SECONDS,
+    expiresIn: expirySec,
     message: `OTP sent to ${email}`,
   };
+}
+
+async function verifyOTPByUserAndType(userId, enteredOtp, type) {
+  if (!['2fa_enable', '2fa_login'].includes(type)) {
+    return { success: false, message: 'Invalid OTP type' };
+  }
+  const fullRecord = await OTP.findOne({
+    userId,
+    otpType: type,
+    isVerified: false,
+    expiresAt: { $gt: new Date() },
+  })
+    .sort({ createdAt: -1 })
+    .limit(1);
+
+  if (!fullRecord) {
+    return { success: false, message: 'OTP expired or not found' };
+  }
+  if (fullRecord.verificationAttempts >= OTP_MAX_ATTEMPTS) {
+    return { success: false, message: 'Maximum verification attempts exceeded' };
+  }
+
+  const isValid = await verifyOTPCode(enteredOtp, fullRecord.otpCode);
+  if (!isValid) {
+    fullRecord.verificationAttempts += 1;
+    await fullRecord.save();
+    return {
+      success: false,
+      message: 'Invalid OTP code',
+      attemptsRemaining: Math.max(0, OTP_MAX_ATTEMPTS - fullRecord.verificationAttempts),
+    };
+  }
+
+  fullRecord.isVerified = true;
+  fullRecord.verificationAttempts += 1;
+  await fullRecord.save();
+  logger.info(`OTP verified for user ${fullRecord.userId} (${type})`);
+
+  return {
+    success: true,
+    message: 'OTP verified successfully',
+    userId: fullRecord.userId,
+    email: fullRecord.email,
+    type: fullRecord.otpType,
+  };
+}
+
+async function send2FAOTPForUser(userId, type, userName, email) {
+  if (!['2fa_enable', '2fa_login'].includes(type)) {
+    return { success: false, message: 'Invalid OTP type' };
+  }
+  const recent = await OTP.findOne({
+    userId,
+    otpType: type,
+    createdAt: { $gte: new Date(Date.now() - OTP_2FA_RESEND_COOLDOWN_SECONDS * 1000) },
+  });
+  if (recent) {
+    return { success: false, message: 'Please wait before requesting another code', skipped: true };
+  }
+  return generateAndSendOTP(userId, email, type, userName);
 }
 
 async function verifyOTP(otpId, enteredOtp) {
@@ -171,7 +242,9 @@ async function invalidateOTP(otpId) {
 module.exports = {
   generateAndSendOTP,
   verifyOTP,
+  verifyOTPByUserAndType,
   resendOTP,
+  send2FAOTPForUser,
   invalidateOTP,
   generateOTPCode,
   hashOTP,

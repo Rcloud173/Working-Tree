@@ -181,12 +181,15 @@ const GlobalStyles = () => (
     }
 
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--gray-50); }
+    .dark body { background: var(--gray-900); }
 
     /* Smooth scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 99px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+    .dark ::-webkit-scrollbar-thumb { background: var(--gray-600); }
+    .dark ::-webkit-scrollbar-thumb:hover { background: var(--gray-500); }
 
     /* Animations */
     @keyframes fadeSlideUp {
@@ -230,6 +233,10 @@ const GlobalStyles = () => (
       background-size: 200% 100%;
       animation: shimmer 1.6s ease infinite;
       border-radius: 6px;
+    }
+    .dark .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
     }
 
     /* Focus rings */
@@ -282,6 +289,7 @@ const GlobalStyles = () => (
     /* Sidebar item */
     .sidebar-item { transition: background 0.15s ease, color 0.15s ease; }
     .sidebar-item:hover { background: var(--green-50); }
+    .dark .sidebar-item:hover { background: rgb(22 101 52 / 0.2); }
 
     /* Input */
     .input-base {
@@ -299,6 +307,7 @@ const GlobalStyles = () => (
       transition: background 0.12s ease, color 0.12s ease;
     }
     .tag-pill:hover { background: var(--green-100); color: var(--green-700); }
+    .dark .tag-pill:hover { background: rgb(22 101 52 / 0.3); color: #4ade80; }
 
     /* Stat item hover */
     .stat-hover { transition: background 0.12s ease; }
@@ -308,11 +317,14 @@ const GlobalStyles = () => (
     /* Action button */
     .action-btn { transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease; }
     .action-btn:hover { background: var(--gray-100); }
+    .dark .action-btn:hover { background: rgb(55 65 80); }
     .action-btn:active { transform: scale(0.94); }
 
     /* Trend badge */
     .trend-up   { color: #16a34a; background: #dcfce7; }
     .trend-down { color: #dc2626; background: #fee2e2; }
+    .dark .trend-up   { color: #4ade80; background: rgb(22 101 52 / 0.35); }
+    .dark .trend-down { color: #f87171; background: rgb(220 38 38 / 0.25); }
 
     /* Weather card gradient */
     .weather-gradient {
@@ -338,6 +350,9 @@ const GlobalStyles = () => (
     .cover-overlay {
       background: linear-gradient(to bottom, transparent 40%, rgba(255,255,255,0.8) 100%);
     }
+    .dark .cover-overlay {
+      background: linear-gradient(to bottom, transparent 40%, rgba(15,23,42,0.85) 100%);
+    }
 
     /* Mobile nav indicator dot */
     .mobile-nav-dot {
@@ -348,10 +363,14 @@ const GlobalStyles = () => (
       border-radius: 50%;
       border: 2px solid white;
     }
+    .dark .mobile-nav-dot { border-color: rgb(31 41 55); }
 
     /* Dropdown shadow */
     .dropdown-shadow {
       box-shadow: 0 8px 30px rgb(0 0 0 / 0.12), 0 2px 8px rgb(0 0 0 / 0.06);
+    }
+    .dark .dropdown-shadow {
+      box-shadow: 0 8px 30px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.2);
     }
   `}</style>
 );
@@ -438,79 +457,53 @@ const ReportModal = ({ postId, onClose }) => {
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgb(0 0 0 / 0.55)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 100, padding: 16,
-    }}>
-      <div className="anim-scale-in" style={{
-        background: 'white', borderRadius: 20, maxWidth: 440, width: '100%',
-        boxShadow: '0 24px 48px rgb(0 0 0 / 0.18)',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 22px', borderBottom: '1px solid #f1f5f9',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <div style={{ padding: 7, background: '#fee2e2', borderRadius: 10 }}>
-              <Flag size={16} style={{ color: '#dc2626' }} />
+    <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="anim-scale-in bg-white dark:bg-gray-800 rounded-[20px] max-w-[440px] w-full shadow-xl dark:shadow-none border border-transparent dark:border-gray-700">
+        <div className="flex items-center justify-between py-[18px] px-[22px] border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-red-100 dark:bg-red-900/40 rounded-[10px]">
+              <Flag size={16} className="text-red-600 dark:text-red-400" />
             </div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>Report Post</span>
+            <span className="font-bold text-[15px] text-gray-900 dark:text-gray-100">Report Post</span>
           </div>
-          <button onClick={onClose} className="btn" style={{
-            padding: 8, background: '#f8fafc', borderRadius: 10, color: '#64748b',
-            display: 'flex', alignItems: 'center',
-          }}>
+          <button onClick={onClose} className="btn p-2 bg-gray-50 dark:bg-gray-700 rounded-[10px] text-gray-500 dark:text-gray-400 flex items-center">
             <X size={18} />
           </button>
         </div>
 
         {done ? (
-          <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-            <div style={{
-              width: 56, height: 56, background: '#dcfce7', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 14px',
-            }}>
-              <CheckCircle size={28} style={{ color: '#16a34a' }} />
+          <div className="py-10 px-6 text-center">
+            <div className="w-14 h-14 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-3.5">
+              <CheckCircle size={28} className="text-green-600 dark:text-green-400" />
             </div>
-            <p style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>Report submitted</p>
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 5 }}>We'll review this post shortly.</p>
+            <p className="font-bold text-gray-900 dark:text-gray-100 text-[15px]">Report submitted</p>
+            <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5">We'll review this post shortly.</p>
           </div>
         ) : (
           <>
-            <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <p style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Why are you reporting this post?</p>
+            <div className="p-[18px_22px] flex flex-col gap-1.5">
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-1.5">Why are you reporting this post?</p>
               {REPORT_REASONS.map((reason) => (
-                <label key={reason} style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
-                  borderRadius: 12, cursor: 'pointer',
-                  border: `1.5px solid ${selected === reason ? '#86efac' : '#e2e8f0'}`,
-                  background: selected === reason ? '#f0fdf4' : 'white',
-                  transition: 'all 0.15s ease',
-                }}>
+                <label
+                  key={reason}
+                  className={`flex items-center gap-3 py-2.5 px-3.5 rounded-xl cursor-pointer border transition-all ${
+                    selected === reason
+                      ? 'border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50'
+                  }`}
+                >
                   <input type="radio" name="reason" value={reason}
                     checked={selected === reason} onChange={() => setSelected(reason)}
-                    style={{ accentColor: '#16a34a' }} />
-                  <span style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>{reason}</span>
+                    className="accent-green-600 dark:accent-green-500" />
+                  <span className="text-[13px] text-gray-700 dark:text-gray-300 font-medium">{reason}</span>
                 </label>
               ))}
             </div>
-            <div style={{
-              padding: '16px 22px', borderTop: '1px solid #f1f5f9',
-              display: 'flex', gap: 10,
-            }}>
-              <button onClick={onClose} className="btn" style={{
-                flex: 1, padding: '11px 0', border: '1.5px solid #e2e8f0',
-                borderRadius: 12, fontSize: 13, fontWeight: 600, color: '#475569',
-                background: 'white',
-              }}>Cancel</button>
-              <button onClick={handleSubmit} disabled={!selected || loading} className="btn" style={{
-                flex: 1, padding: '11px 0', background: '#dc2626', color: 'white',
-                borderRadius: 12, fontSize: 13, fontWeight: 600,
-                opacity: (!selected || loading) ? 0.45 : 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              }}>
+            <div className="py-4 px-[22px] border-t border-gray-100 dark:border-gray-700 flex gap-2.5">
+              <button onClick={onClose} className="btn flex-1 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-[13px] font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700">
+                Cancel
+              </button>
+              <button onClick={handleSubmit} disabled={!selected || loading} className="btn flex-1 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1.5 disabled:opacity-45">
                 {loading ? <Loader size={14} className="spin" /> : <Flag size={14} />}
                 Submit Report
               </button>
@@ -571,66 +564,36 @@ const PostComposerModal = ({ user, onClose, onPostCreated }) => {
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgb(0 0 0 / 0.55)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 100, padding: 16,
-    }}>
-      <div className="anim-scale-in" style={{
-        background: 'white', borderRadius: 22, maxWidth: 640, width: '100%',
-        maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 24px 48px rgb(0 0 0 / 0.18)',
-      }}>
+    <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="anim-scale-in bg-white dark:bg-gray-800 rounded-[22px] max-w-[640px] w-full max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none border border-transparent dark:border-gray-700">
         {/* Header */}
-        <div style={{
-          position: 'sticky', top: 0, background: 'white',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 22px', borderBottom: '1px solid #f1f5f9',
-          borderRadius: '22px 22px 0 0', zIndex: 10,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <img src={user?.profilePhoto?.url ?? user?.avatar?.url ?? user?.avatar} alt={user?.name} style={{
-              width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-              border: '2px solid #dcfce7',
-            }} />
+        <div className="sticky top-0 bg-white dark:bg-gray-800 flex items-center justify-between py-[18px] px-[22px] border-b border-gray-100 dark:border-gray-700 rounded-t-[22px] z-10">
+          <div className="flex items-center gap-3">
+            <img src={user?.profilePhoto?.url ?? user?.avatar?.url ?? user?.avatar} alt={user?.name} className="w-[42px] h-[42px] rounded-full object-cover border-2 border-green-200 dark:border-green-700" />
             <div>
-              <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{user.name}</p>
-              <p style={{ fontSize: 12, color: '#64748b' }}>{user.headline}</p>
+              <p className="font-bold text-sm text-gray-900 dark:text-gray-100">{user.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{user.headline}</p>
             </div>
           </div>
-          <button onClick={onClose} className="btn" style={{
-            padding: 8, background: '#f8fafc', borderRadius: 10,
-            color: '#64748b', display: 'flex', alignItems: 'center',
-          }}>
+          <button onClick={onClose} className="btn p-2 bg-gray-50 dark:bg-gray-700 rounded-[10px] text-gray-500 dark:text-gray-400 flex items-center">
             <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px 22px' }}>
+        <div className="p-5 px-[22px]">
           <textarea
             autoFocus value={content} onChange={(e) => setContent(e.target.value)}
             placeholder="Share your farming insights, experiences, or tips with fellow farmers..."
-            className="input-base"
-            style={{
-              width: '100%', height: 144, padding: '14px 16px',
-              fontSize: 14, color: '#0f172a',
-              border: '1.5px solid #e2e8f0', borderRadius: 14,
-              resize: 'none', fontFamily: 'Plus Jakarta Sans, sans-serif',
-              lineHeight: 1.6,
-            }}
+            className="input-base w-full h-36 py-3.5 px-4 text-sm text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-[14px] resize-none font-[inherit] leading-relaxed bg-white dark:bg-gray-700 focus:border-green-500 dark:focus:border-green-500 placeholder-gray-500 dark:placeholder-gray-400"
           />
 
           {selectedImages.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            <div className="flex flex-wrap gap-2 mt-3">
               {selectedImages.map((src, i) => (
-                <div key={i} style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0', width: 120, height: 120 }}>
-                  <img src={src} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  <button type="button" onClick={() => removeMedia(i)} className="btn" style={{
-                    position: 'absolute', top: 4, right: 4,
-                    background: 'rgb(0 0 0 / 0.65)', color: 'white',
-                    padding: 4, borderRadius: 8, display: 'flex', alignItems: 'center',
-                  }}>
+                <div key={i} className="relative rounded-[14px] overflow-hidden border border-gray-200 dark:border-gray-600 w-[120px] h-[120px]">
+                  <img src={src} alt="preview" className="w-full h-full object-cover block" />
+                  <button type="button" onClick={() => removeMedia(i)} className="btn absolute top-1 right-1 bg-black/65 text-white p-1 rounded-lg flex items-center">
                     <X size={12} />
                   </button>
                 </div>
@@ -639,16 +602,19 @@ const PostComposerModal = ({ user, onClose, onPostCreated }) => {
           )}
 
           {/* Tags */}
-          <div style={{ marginTop: 18 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Tags</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+          <div className="mt-[18px]">
+            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">Tags</p>
+            <div className="flex flex-wrap gap-1.5">
               {AVAILABLE_TAGS.map(tag => (
-                <button key={tag} onClick={() => toggleTag(tag)} className="btn tag-pill" style={{
-                  padding: '6px 13px', borderRadius: 99, fontSize: 12, fontWeight: 600,
-                  border: tags.includes(tag) ? 'none' : '1.5px solid #e2e8f0',
-                  background: tags.includes(tag) ? '#16a34a' : 'white',
-                  color: tags.includes(tag) ? 'white' : '#475569',
-                }}>
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`btn tag-pill py-1.5 px-3 rounded-full text-xs font-semibold border transition-colors ${
+                    tags.includes(tag)
+                      ? 'border-transparent bg-green-600 dark:bg-green-500 text-white'
+                      : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
                   #{tag}
                 </button>
               ))}
@@ -656,27 +622,14 @@ const PostComposerModal = ({ user, onClose, onPostCreated }) => {
           </div>
 
           {/* Media actions */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 18, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
-            <button onClick={() => fileInputRef.current?.click()} className="btn" style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '9px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10,
-              fontSize: 13, fontWeight: 600, color: '#475569',
-              background: 'white', transition: 'all 0.15s ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#86efac'; e.currentTarget.style.color = '#15803d'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
+          <div className="flex gap-2 mt-[18px] pt-[18px] border-t border-gray-100 dark:border-gray-700">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="btn flex items-center gap-1.5 py-2 px-3.5 border border-gray-200 dark:border-gray-600 rounded-[10px] text-[13px] font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 hover:text-green-700 dark:hover:text-green-400 transition-all"
             >
               <Image size={15} /> Photo
             </button>
-            <button className="btn" style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '9px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10,
-              fontSize: 13, fontWeight: 600, color: '#475569', background: 'white',
-              transition: 'all 0.15s ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; e.currentTarget.style.color = '#1d4ed8'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
-            >
+            <button className="btn flex items-center gap-1.5 py-2 px-3.5 border border-gray-200 dark:border-gray-600 rounded-[10px] text-[13px] font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-700 dark:hover:text-blue-400 transition-all">
               <FileText size={15} /> Article
             </button>
             <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleMediaChange} />
@@ -684,24 +637,15 @@ const PostComposerModal = ({ user, onClose, onPostCreated }) => {
         </div>
 
         {/* Footer */}
-        <div style={{
-          position: 'sticky', bottom: 0, background: '#f8fafc',
-          padding: '16px 22px', borderTop: '1px solid #f1f5f9',
-          display: 'flex', gap: 10, borderRadius: '0 0 22px 22px',
-        }}>
-          <button onClick={onClose} className="btn" style={{
-            flex: 1, padding: '11px 0', border: '1.5px solid #e2e8f0',
-            color: '#475569', borderRadius: 12, fontSize: 13, fontWeight: 600,
-            background: 'white',
-          }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={(!content.trim() && mediaFiles.length === 0) || loading} className="btn" style={{
-            flex: 1, padding: '11px 0',
-            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-            color: 'white', borderRadius: 12, fontSize: 13, fontWeight: 700,
-            opacity: ((!content.trim() && mediaFiles.length === 0) || loading) ? 0.45 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            boxShadow: (content.trim() || mediaFiles.length > 0) ? '0 4px 12px rgb(22 163 74 / 0.35)' : 'none',
-          }}>
+        <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800/95 py-4 px-[22px] border-t border-gray-100 dark:border-gray-700 flex gap-2.5 rounded-b-[22px]">
+          <button onClick={onClose} className="btn flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-[13px] font-semibold bg-white dark:bg-gray-700">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={(!content.trim() && mediaFiles.length === 0) || loading}
+            className="btn flex-1 py-2.5 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-45 shadow-[0_4px_12px_rgb(22_163_74/0.35)]"
+          >
             {loading ? <Loader size={14} className="spin" /> : <Plus size={14} />}
             {loading ? 'Posting...' : 'Post'}
           </button>
@@ -740,82 +684,47 @@ const EditProfileModal = ({ user, onClose, onUpdated }) => {
   ];
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgb(0 0 0 / 0.55)',
-      backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 100, padding: 16,
-    }}>
-      <div className="anim-scale-in" style={{
-        background: 'white', borderRadius: 22, maxWidth: 500, width: '100%',
-        maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 24px 48px rgb(0 0 0 / 0.18)',
-      }}>
-        <div style={{
-          position: 'sticky', top: 0, background: 'white',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 22px', borderBottom: '1px solid #f1f5f9',
-          borderRadius: '22px 22px 0 0',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>Edit Profile</span>
-          <button onClick={onClose} className="btn" style={{
-            padding: 8, background: '#f8fafc', borderRadius: 10,
-            color: '#64748b', display: 'flex', alignItems: 'center',
-          }}>
+    <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="anim-scale-in bg-white dark:bg-gray-800 rounded-[22px] max-w-[500px] w-full max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none border border-transparent dark:border-gray-700">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 flex items-center justify-between py-[18px] px-[22px] border-b border-gray-100 dark:border-gray-700 rounded-t-[22px]">
+          <span className="font-bold text-[15px] text-gray-900 dark:text-gray-100">Edit Profile</span>
+          <button onClick={onClose} className="btn p-2 bg-gray-50 dark:bg-gray-700 rounded-[10px] text-gray-500 dark:text-gray-400 flex items-center">
             <X size={18} />
           </button>
         </div>
 
-        <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="py-5 px-[22px] flex flex-col gap-4">
           {fields.map(({ label, key, type }) => (
             <div key={key}>
-              <label style={{
-                display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8',
-                textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
-              }}>{label}</label>
-              <input type={type} value={form[key]}
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
+              <input
+                type={type}
+                value={form[key]}
                 onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
-                className="input-base"
-                style={{
-                  width: '100%', padding: '10px 14px', fontSize: 13,
-                  border: '1.5px solid #e2e8f0', borderRadius: 12,
-                  fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#1e293b',
-                }}
+                className="input-base w-full py-2.5 px-3.5 text-[13px] border border-gray-200 dark:border-gray-600 rounded-xl font-[inherit] text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-700"
               />
             </div>
           ))}
           <div>
-            <label style={{
-              display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8',
-              textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
-            }}>Bio</label>
-            <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
-              rows={3} className="input-base"
-              style={{
-                width: '100%', padding: '10px 14px', fontSize: 13,
-                border: '1.5px solid #e2e8f0', borderRadius: 12,
-                resize: 'none', fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#1e293b',
-              }}
+            <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Bio</label>
+            <textarea
+              value={form.bio}
+              onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
+              rows={3}
+              className="input-base w-full py-2.5 px-3.5 text-[13px] border border-gray-200 dark:border-gray-600 rounded-xl resize-none font-[inherit] text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-700"
             />
           </div>
         </div>
 
-        <div style={{
-          position: 'sticky', bottom: 0, background: '#f8fafc',
-          padding: '16px 22px', borderTop: '1px solid #f1f5f9',
-          display: 'flex', gap: 10, borderRadius: '0 0 22px 22px',
-        }}>
-          <button onClick={onClose} className="btn" style={{
-            flex: 1, padding: '11px 0', border: '1.5px solid #e2e8f0',
-            color: '#475569', borderRadius: 12, fontSize: 13, fontWeight: 600, background: 'white',
-          }}>Cancel</button>
-          <button onClick={handleSave} disabled={loading} className="btn" style={{
-            flex: 1, padding: '11px 0',
-            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-            color: 'white', borderRadius: 12, fontSize: 13, fontWeight: 700,
-            opacity: loading ? 0.5 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            boxShadow: '0 4px 12px rgb(22 163 74 / 0.3)',
-          }}>
+        <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800/95 py-4 px-[22px] border-t border-gray-100 dark:border-gray-700 flex gap-2.5 rounded-b-[22px]">
+          <button onClick={onClose} className="btn flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-[13px] font-semibold bg-white dark:bg-gray-700">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="btn flex-1 py-2.5 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-[0_4px_12px_rgb(22_163_74/0.3)]"
+          >
             {loading ? <Loader size={14} className="spin" /> : null}
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
@@ -863,30 +772,24 @@ const CommentsSection = ({ postId, currentUser }) => {
   };
 
   return (
-    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 16, marginTop: 4 }}>
+    <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mt-1">
       {/* Comment input */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-        <img src={currentUser.avatar} alt="you" style={{
-          width: 34, height: 34, borderRadius: '50%', objectFit: 'cover',
-          flexShrink: 0, border: '2px solid #dcfce7',
-        }} />
-        <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-          <input type="text" value={text} onChange={e => setText(e.target.value)}
+      <div className="flex gap-2.5 mb-4">
+        <img src={currentUser.avatar} alt="you" className="w-[34px] h-[34px] rounded-full object-cover flex-shrink-0 border-2 border-green-200 dark:border-green-700" />
+        <div className="flex-1 flex gap-2">
+          <input
+            type="text"
+            value={text}
+            onChange={e => setText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
             placeholder="Write a comment..."
-            className="input-base"
-            style={{
-              flex: 1, background: '#f8fafc', padding: '9px 16px',
-              borderRadius: 99, fontSize: 13, fontFamily: 'Plus Jakarta Sans, sans-serif',
-              border: '1.5px solid #e8edf2', color: '#1e293b',
-            }}
+            className="input-base flex-1 py-2 px-4 rounded-full text-[13px] font-[inherit] bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
-          <button onClick={handleSubmit} disabled={!text.trim() || submitting} className="btn" style={{
-            padding: 9, background: '#16a34a', color: 'white', borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: (!text.trim() || submitting) ? 0.4 : 1,
-            flexShrink: 0, width: 36, height: 36,
-          }}>
+          <button
+            onClick={handleSubmit}
+            disabled={!text.trim() || submitting}
+            className="btn p-2 bg-green-600 dark:bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0 w-9 h-9 disabled:opacity-40"
+          >
             {submitting ? <Loader size={14} className="spin" /> : <Send size={14} />}
           </button>
         </div>
@@ -894,29 +797,34 @@ const CommentsSection = ({ postId, currentUser }) => {
 
       {/* Comment list */}
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="flex flex-col gap-2.5">
           {[1, 2].map(i => <CardSkeleton key={i} />)}
         </div>
       ) : comments.length === 0 ? (
-        <p style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>
+        <p className="text-[13px] text-gray-400 dark:text-gray-500 text-center py-3">
           No comments yet. Be the first!
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 240, overflowY: 'auto', paddingRight: 4 }}>
+        <div className="flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
           {comments.map(c => (
-            <div key={c._id} style={{ display: 'flex', gap: 10 }}>
-              <img src={c.author.avatar} alt={c.author.name}
-                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, cursor: 'pointer' }}
-                onClick={() => navigate(`/profile/${c.author._id}`)} />
-              <div style={{ flex: 1, background: '#f8fafc', borderRadius: 14, padding: '10px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', cursor: 'pointer' }}
-                    onClick={() => navigate(`/profile/${c.author._id}`)}>
+            <div key={c._id} className="flex gap-2.5">
+              <img
+                src={c.author.avatar}
+                alt={c.author.name}
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                onClick={() => navigate(`/profile/${c.author._id}`)}
+              />
+              <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-[14px] py-2.5 px-3.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="text-xs font-bold text-gray-900 dark:text-gray-100 cursor-pointer"
+                    onClick={() => navigate(`/profile/${c.author._id}`)}
+                  >
                     {c.author.name}
                   </span>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{formatTimeAgo(c.createdAt)}</span>
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatTimeAgo(c.createdAt)}</span>
                 </div>
-                <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.55 }}>{c.content}</p>
+                <p className="text-[13px] text-gray-600 dark:text-gray-300 leading-snug">{c.content}</p>
               </div>
             </div>
           ))}
@@ -1032,15 +940,11 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
       <article className="card post-card anim-fade-slide bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none transition-colors duration-200" style={{ marginBottom: 12, overflow: 'hidden' }}>
         {/* Post Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '18px 20px 12px' }}>
-          <img src={post.author.avatar} alt={post.author.name}
-            style={{
-              width: 44, height: 44, borderRadius: '50%', objectFit: 'cover',
-              flexShrink: 0, cursor: 'pointer', border: '2px solid #dcfce7',
-              transition: 'transform 0.2s ease',
-            }}
+          <img
+            src={post.author.avatar}
+            alt={post.author.name}
+            className="w-11 h-11 rounded-full object-cover flex-shrink-0 cursor-pointer border-2 border-green-200 dark:border-green-700 transition-transform hover:scale-[1.06]"
             onClick={() => navigate(`/profile/${post.author._id}`)}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -1057,71 +961,53 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
                 </span>
               )}
             </div>
-            <p style={{ fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 1.4 }}>{post.author.headline}</p>
-            <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatTimeAgo(post.createdAt)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{post.author.headline}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTimeAgo(post.createdAt)}</p>
           </div>
 
           {/* Dropdown */}
           <div style={{ position: 'relative', flexShrink: 0 }} ref={dropRef}>
-            <button onClick={() => setShowDropdown(!showDropdown)} className="btn" style={{
-              padding: 7, borderRadius: 10, color: '#94a3b8',
-              background: showDropdown ? '#f1f5f9' : 'transparent',
-              display: 'flex', alignItems: 'center', transition: 'all 0.15s ease',
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-              onMouseLeave={e => { if (!showDropdown) e.currentTarget.style.background = 'transparent'; }}
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className={`btn p-1.5 rounded-[10px] text-gray-400 dark:text-gray-500 flex items-center transition-colors ${showDropdown ? 'bg-gray-100 dark:bg-gray-700' : 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <MoreHorizontal size={18} />
             </button>
             {showDropdown && (
-              <div className="anim-scale-in dropdown-shadow" style={{
-                position: 'absolute', right: 0, top: 38,
-                background: 'white', borderRadius: 14, width: 196, zIndex: 30,
-                border: '1px solid #f1f5f9', overflow: 'hidden',
-              }}>
+              <div className="anim-scale-in dropdown-shadow absolute right-0 top-[38px] bg-white dark:bg-gray-800 rounded-[14px] w-[196px] z-30 border border-gray-100 dark:border-gray-700 overflow-hidden">
                 {!isOwn && (
-                  <button onClick={handleFollow} disabled={followLoading} className="btn" style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 9,
-                    padding: '12px 16px', fontSize: 13, fontWeight: 500, color: '#334155',
-                    background: 'none', textAlign: 'left', transition: 'background 0.12s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className="btn w-full flex items-center gap-2 py-3 px-4 text-[13px] font-medium text-gray-700 dark:text-gray-300 text-left hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-colors"
                   >
                     {followLoading ? <Loader size={14} className="spin" /> : <Users size={14} />}
                     {isFollowing ? t('post.unfollow') : t('post.follow')} {post.author.name.split(' ')[0]}
                   </button>
                 )}
                 {isOwn && onPostDeleted && (
-                  <button onClick={async () => {
-                    setShowDropdown(false);
-                    setDeleteLoading(true);
-                    try {
-                      const { postsCount } = await postService.deletePost(post._id);
-                      onPostDeleted(post._id, postsCount);
-                      const u = authStore.getState().user;
-                      if (u) authStore.setUser({ ...u, stats: { ...(u.stats || {}), postsCount } });
-                    } catch (err) { console.error(err); }
-                    finally { setDeleteLoading(false); }
-                  }} disabled={deleteLoading} className="btn" style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 9,
-                    padding: '12px 16px', fontSize: 13, fontWeight: 500, color: '#dc2626',
-                    background: 'none', textAlign: 'left', transition: 'background 0.12s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  <button
+                    onClick={async () => {
+                      setShowDropdown(false);
+                      setDeleteLoading(true);
+                      try {
+                        const { postsCount } = await postService.deletePost(post._id);
+                        onPostDeleted(post._id, postsCount);
+                        const u = authStore.getState().user;
+                        if (u) authStore.setUser({ ...u, stats: { ...(u.stats || {}), postsCount } });
+                      } catch (err) { console.error(err); }
+                      finally { setDeleteLoading(false); }
+                    }}
+                    disabled={deleteLoading}
+                    className="btn w-full flex items-center gap-2 py-3 px-4 text-[13px] font-medium text-red-600 dark:text-red-400 text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     {deleteLoading ? <Loader size={14} className="spin" /> : <X size={14} />}
                     {t('post.deletePost')}
                   </button>
                 )}
-                <button onClick={() => { setShowDropdown(false); setShowReportModal(true); }} className="btn" style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 9,
-                  padding: '12px 16px', fontSize: 13, fontWeight: 500, color: '#dc2626',
-                  background: 'none', textAlign: 'left', transition: 'background 0.12s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                <button
+                  onClick={() => { setShowDropdown(false); setShowReportModal(true); }}
+                  className="btn w-full flex items-center gap-2 py-3 px-4 text-[13px] font-medium text-red-600 dark:text-red-400 text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 >
                   <Flag size={14} /> {t('post.reportPost')}
                 </button>
@@ -1131,32 +1017,23 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
         </div>
 
         {/* Content */}
-        <div style={{ padding: '0 20px 14px' }}>
-          <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.65 }}>
+        <div className="px-5 pb-3.5">
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             {bodyToShow}
             {(isLong && !showTranslated) || (showTranslated && isLongTranslated) ? (
-              <button onClick={() => setShowMore(!showMore)} className="btn" style={{
-                color: '#16a34a', fontWeight: 600, fontSize: 13,
-                background: 'none', marginLeft: 5, padding: 0,
-              }}>
+              <button onClick={() => setShowMore(!showMore)} className="btn text-green-600 dark:text-green-400 font-semibold text-[13px] bg-transparent ml-1.5 p-0">
                 {showMore ? t('post.showLess') : t('post.more')}
               </button>
             ) : null}
           </p>
           {content.trim() && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               {!translatedText ? (
                 <button
                   type="button"
                   onClick={translate}
                   disabled={translateLoading}
-                  className="btn"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontSize: 12, color: '#16a34a', fontWeight: 600,
-                    background: '#f0fdf4', padding: '4px 10px', borderRadius: 8,
-                    border: '1px solid #dcfce7',
-                  }}
+                  className="btn inline-flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-900/20 py-1 px-2.5 rounded-lg border border-green-200 dark:border-green-700"
                 >
                   {translateLoading ? <Loader size={12} className="animate-spin" /> : <Languages size={12} />}
                   {translateLoading ? t('post.translating') : t('post.translate')}
@@ -1165,30 +1042,25 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
                 <button
                   type="button"
                   onClick={toggleView}
-                  className="btn"
-                  style={{
-                    fontSize: 12, color: '#16a34a', fontWeight: 600,
-                    background: 'none', padding: '4px 0', border: 'none',
-                  }}
+                  className="btn text-xs text-green-600 dark:text-green-400 font-semibold bg-transparent py-1 p-0 border-none"
                 >
                   {showTranslated ? t('post.showOriginal') : t('post.showTranslated')}
                 </button>
               )}
               {translateError && (
-                <span style={{ fontSize: 11, color: '#dc2626' }}>{t('post.translationFailed')}</span>
+                <span className="text-[11px] text-red-600 dark:text-red-400">{t('post.translationFailed')}</span>
               )}
             </div>
           )}
 
           {/* Tags */}
           {post.tags?.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
               {post.tags.map(tag => (
-                <span key={tag} className="tag-pill" style={{
-                  fontSize: 12, color: '#16a34a', background: '#f0fdf4',
-                  padding: '3px 10px', borderRadius: 99, fontWeight: 600,
-                  cursor: 'pointer', border: '1px solid #dcfce7',
-                }}>
+                <span
+                  key={tag}
+                  className="tag-pill text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 py-0.5 px-2.5 rounded-full font-semibold cursor-pointer border border-green-200 dark:border-green-700"
+                >
                   #{tag}
                 </span>
               ))}
@@ -1198,108 +1070,79 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
 
         {/* Media */}
         {post.media?.length > 0 && (
-          <div style={{ padding: '0 20px 14px' }}>
+          <div className="px-5 pb-3.5">
             {post.media[0].type === 'video' ? (
-              <video src={post.media[0].url} controls style={{
-                width: '100%', borderRadius: 14, maxHeight: 380, display: 'block',
-                border: '1px solid #f1f5f9',
-              }} />
+              <video src={post.media[0].url} controls className="w-full rounded-[14px] max-h-[380px] block border border-gray-100 dark:border-gray-700" />
             ) : (
-              <img src={post.media[0].url} alt="Post media" style={{
-                width: '100%', borderRadius: 14, objectFit: 'cover',
-                maxHeight: 380, cursor: 'pointer', display: 'block',
-                border: '1px solid #f1f5f9', transition: 'opacity 0.2s ease',
-              }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '0.93'}
-                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              <img
+                src={post.media[0].url}
+                alt="Post media"
+                className="w-full rounded-[14px] object-cover max-h-[380px] cursor-pointer block border border-gray-100 dark:border-gray-700 transition-opacity hover:opacity-90"
               />
             )}
           </div>
         )}
 
         {/* Stats bar */}
-        <div style={{
-          padding: '0 20px 10px',
-          display: 'flex', alignItems: 'center', gap: 16,
-          fontSize: 12, color: '#94a3b8',
-        }}>
-          <button className="btn" style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            background: 'none', color: '#94a3b8', padding: 0, fontSize: 12,
-            transition: 'color 0.15s ease',
-          }}
-            onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
-          >
-            <Heart size={12} style={{ color: liked ? '#ef4444' : 'inherit' }} fill={liked ? '#ef4444' : 'none'} />
+        <div className="px-5 py-2.5 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
+          <button className="btn flex items-center gap-1 bg-transparent p-0 text-xs text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+            <Heart size={12} className={liked ? 'text-red-500 dark:text-red-400' : ''} fill={liked ? 'currentColor' : 'none'} style={likeAnim ? { animation: 'heartPop 0.4s ease' } : {}} />
             <span>{formatNumber(likesCount)}</span>
           </button>
-          <button className="btn" style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            background: 'none', color: '#94a3b8', padding: 0, fontSize: 12,
-            transition: 'color 0.15s ease',
-          }}
-            onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
-            onClick={() => setShowComments(!showComments)}
-          >
+          <button className="btn flex items-center gap-1 bg-transparent p-0 text-xs text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors" onClick={() => setShowComments(!showComments)}>
             <MessageCircle size={12} />
             <span>{formatNumber(post.commentsCount)}</span>
           </button>
-          <button className="btn" style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            background: 'none', color: '#94a3b8', padding: 0, fontSize: 12,
-            transition: 'color 0.15s ease',
-          }}
-            onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
-          >
-            <Bookmark size={12} style={{ color: saved ? '#16a34a' : 'inherit' }} fill={saved ? '#16a34a' : 'none'} />
+          <button className="btn flex items-center gap-1 bg-transparent p-0 text-xs text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+            <Bookmark size={12} className={saved ? 'text-green-600 dark:text-green-400' : ''} fill={saved ? 'currentColor' : 'none'} />
             <span>{formatNumber(savedCount)}</span>
           </button>
-          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span className="ml-auto flex items-center gap-1">
             <Share2 size={12} />
             {formatNumber(sharesCount)}
           </span>
         </div>
 
         {/* Divider */}
-        <div style={{ margin: '0 20px', height: 1, background: '#f1f5f9' }} />
+        <div className="mx-5 h-px bg-gray-100 dark:bg-gray-700" />
 
         {/* Action Buttons */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '4px 8px' }}>
+        <div className="grid grid-cols-4 py-1 px-2">
           {[
             {
               label: 'Like', icon: Heart,
-              active: liked, activeColor: '#ef4444', activeBg: '#fff5f5',
-              iconProps: { fill: liked ? '#ef4444' : 'none', style: likeAnim ? { animation: 'heartPop 0.4s ease' } : {} },
+              active: liked,
+              activeClass: 'text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20',
+              iconProps: { fill: liked ? 'currentColor' : 'none', style: likeAnim ? { animation: 'heartPop 0.4s ease' } : {}, className: liked ? 'text-red-500 dark:text-red-400' : '' },
               onClick: handleLike,
             },
             {
               label: 'Comment', icon: MessageCircle,
-              active: showComments, activeColor: '#16a34a', activeBg: '#f0fdf4',
+              active: showComments,
+              activeClass: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
               onClick: () => setShowComments(!showComments),
             },
             {
               label: 'Share', icon: Share2,
-              active: false, activeColor: '#16a34a', activeBg: '#f0fdf4',
+              active: false,
+              activeClass: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
               onClick: handleShare,
             },
             {
               label: 'Save', icon: Bookmark,
-              active: saved, activeColor: '#16a34a', activeBg: '#f0fdf4',
-              iconProps: { fill: saved ? '#16a34a' : 'none' },
+              active: saved,
+              activeClass: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
+              iconProps: { fill: saved ? 'currentColor' : 'none', className: saved ? 'text-green-600 dark:text-green-400' : '' },
               onClick: handleSave,
             },
-          ].map(({ label, icon: Icon, active, activeColor, activeBg, iconProps = {}, onClick }) => (
-            <button key={label} onClick={onClick} className="btn action-btn" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '10px 0', borderRadius: 12, fontSize: 12, fontWeight: 600,
-              color: active ? activeColor : '#64748b',
-              background: active ? activeBg : 'transparent',
-            }}>
+          ].map(({ label, icon: Icon, active, activeClass, iconProps = {}, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className={`btn action-btn flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${active ? activeClass : 'text-gray-500 dark:text-gray-400 bg-transparent'}`}
+            >
               <Icon size={16} {...iconProps} />
-              <span className="hidden sm:inline" style={{ fontSize: 12 }}>{label}</span>
+              <span className="hidden sm:inline text-xs">{label}</span>
             </button>
           ))}
         </div>
@@ -1348,184 +1191,139 @@ const CompactProfileCard = ({ user, onEditProfile }) => {
       </div>
 
       {/* Avatar */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: -28, marginBottom: 10 }}>
-        <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => navigate(`/profile/${user._id}`)}>
-          <img src={user.avatar} alt={user.name} style={{
-            width: 56, height: 56, borderRadius: '50%',
-            border: '3px solid white', objectFit: 'cover',
-            boxShadow: '0 4px 14px rgb(0 0 0 / 0.12)',
-          }} />
+      <div className="flex justify-center -mt-7 mb-2.5">
+        <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${user._id}`)}>
+          <img
+            src={user.avatar}
+            alt={user.name}
+            className="w-14 h-14 rounded-full border-[3px] border-white dark:border-gray-800 object-cover shadow-md"
+          />
           {user.verified && (
-            <div style={{
-              position: 'absolute', bottom: 0, right: -1,
-              background: '#3b82f6', borderRadius: '50%', padding: 2,
-              border: '2px solid white', display: 'flex', alignItems: 'center',
-            }}>
-              <CheckCircle size={10} fill="white" color="#3b82f6" />
+            <div className="absolute bottom-0 -right-0.5 bg-blue-500 rounded-full p-0.5 border-2 border-white dark:border-gray-800 flex items-center">
+              <CheckCircle size={10} fill="white" className="text-blue-500" />
             </div>
           )}
         </div>
       </div>
 
       {/* Info */}
-      <div style={{ padding: '0 16px 16px', textAlign: 'center' }}>
-        <button onClick={() => navigate(`/profile/${user._id}`)} className="btn" style={{
-          background: 'none', padding: 0, fontWeight: 700, fontSize: 14,
-          color: '#0f172a', transition: 'color 0.15s ease',
-        }}
-          onMouseEnter={e => e.currentTarget.style.color = '#16a34a'}
-          onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}
-        >{user.name}</button>
-        <p style={{ fontSize: 12, color: '#64748b', marginTop: 3, lineHeight: 1.45 }}>{user.headline}</p>
+      <div className="px-4 pb-4 text-center">
+        <button
+          onClick={() => navigate(`/profile/${user._id}`)}
+          className="btn bg-transparent p-0 font-bold text-sm text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+        >
+          {user.name}
+        </button>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{user.headline}</p>
         {user.location && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 6 }}>
-            <MapPin size={11} style={{ color: '#94a3b8' }} />
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>{user.location}</span>
+          <div className="flex items-center justify-center gap-1 mt-1.5">
+            <MapPin size={11} className="text-gray-400 dark:text-gray-500" />
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">{user.location}</span>
           </div>
         )}
 
         {/* Stats */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6,
-          marginTop: 14, padding: 10, background: '#f0fdf4', borderRadius: 14,
-        }}>
+        <div className="grid grid-cols-2 gap-1.5 mt-3.5 p-2.5 bg-green-50 dark:bg-green-900/20 rounded-[14px]">
           {[
             { label: 'Followers', value: formatNumber(user.followersCount) },
             { label: 'Following', value: formatNumber(user.followingCount) },
             { label: 'Posts', value: user.postsCount },
             { label: 'Saved', value: formatNumber(user.savedCount) },
           ].map(({ label, value }) => (
-            <div key={label} className="stat-hover" style={{ textAlign: 'center', padding: '6px 4px', cursor: 'pointer' }}>
-              <p style={{ fontWeight: 800, fontSize: 14, color: '#15803d' }}>{value}</p>
-              <p style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{label}</p>
+            <div key={label} className="stat-hover text-center py-1.5 px-1 cursor-pointer">
+              <p className="font-extrabold text-sm text-green-700 dark:text-green-400">{value}</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
             </div>
           ))}
         </div>
 
         {/* Activity */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6,
-          padding: '12px 0', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', marginTop: 12,
-        }}>
+        <div className="grid grid-cols-2 gap-1.5 py-3 border-t border-b border-gray-100 dark:border-gray-700 mt-3">
           {[
             { icon: Eye, value: user.profileViewers, label: 'Profile views' },
             { icon: TrendingUp, value: user.postImpressions, label: 'Impressions' },
           ].map(({ icon: Icon, value, label }) => (
-            <div key={label} style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '6px 8px', borderRadius: 10, cursor: 'pointer',
-              transition: 'background 0.12s ease',
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ padding: 6, background: '#dcfce7', borderRadius: 8 }}>
-                <Icon size={12} style={{ color: '#16a34a' }} />
+            <div key={label} className="flex items-center gap-1.5 py-1.5 px-2 rounded-[10px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                <Icon size={12} className="text-green-600 dark:text-green-400" />
               </div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontWeight: 700, fontSize: 12, color: '#15803d' }}>{value}</p>
-                <p style={{ fontSize: 10, color: '#94a3b8' }}>{label}</p>
+              <div className="text-left">
+                <p className="font-bold text-xs text-green-700 dark:text-green-400">{value}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{label}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 12 }}>
-          <button onClick={onEditProfile} className="btn" style={{
-            width: '100%', padding: '9px 0',
-            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-            color: 'white', borderRadius: 11, fontSize: 12, fontWeight: 700,
-            boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)',
-            transition: 'all 0.15s ease',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 16px rgb(22 163 74 / 0.4)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px rgb(22 163 74 / 0.3)'; }}
+        <div className="flex flex-col gap-1.5 mt-3">
+          <button
+            onClick={onEditProfile}
+            className="btn w-full py-2 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-[11px] text-xs font-bold shadow-[0_3px_10px_rgb(22_163_74/0.3)] hover:-translate-y-px hover:shadow-[0_5px_16px_rgb(22_163_74/0.4)] transition-all"
           >
             Edit Profile
           </button>
-          <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/profile/${user._id}`); }}
-            className="btn" style={{
-              width: '100%', padding: '9px 0',
-              border: '1.5px solid #bbf7d0', color: '#16a34a',
-              borderRadius: 11, fontSize: 12, fontWeight: 700,
-              background: 'white', transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+          <button
+            onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/profile/${user._id}`); }}
+            className="btn w-full py-2 border border-green-300 dark:border-green-600 text-green-600 dark:text-green-400 rounded-[11px] text-xs font-bold bg-white dark:bg-gray-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
           >
             Share Profile
           </button>
         </div>
 
         {/* Expandable info */}
-        <div style={{
-          marginTop: 10, textAlign: 'left', overflow: 'hidden',
-          maxHeight: showMore ? 200 : 0, transition: 'max-height 0.3s ease',
-          display: 'flex', flexDirection: 'column', gap: 4,
-        }}>
+        <div
+          className="mt-2.5 text-left overflow-hidden flex flex-col gap-1 transition-[max-height] duration-300"
+          style={{ maxHeight: showMore ? 200 : 0 }}
+        >
           {user.education && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 8px', borderRadius: 10, transition: 'background 0.12s' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <Award size={12} style={{ color: '#16a34a', marginTop: 1, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: '#475569', lineHeight: 1.5 }}>{user.education}</span>
+            <div className="flex items-start gap-2 py-1.5 px-2 rounded-[10px] hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <Award size={12} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+              <span className="text-[11px] text-gray-600 dark:text-gray-400 leading-snug">{user.education}</span>
             </div>
           )}
           {user.experience && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 8px', borderRadius: 10, transition: 'background 0.12s' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <Briefcase size={12} style={{ color: '#16a34a', marginTop: 1, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: '#475569', lineHeight: 1.5 }}>{user.experience}</span>
+            <div className="flex items-start gap-2 py-1.5 px-2 rounded-[10px] hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <Briefcase size={12} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+              <span className="text-[11px] text-gray-600 dark:text-gray-400 leading-snug">{user.experience}</span>
             </div>
           )}
           {user.website && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 8px', borderRadius: 10, cursor: 'pointer', transition: 'background 0.12s' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <LinkIcon size={12} style={{ color: '#16a34a', marginTop: 1, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: '#16a34a', textDecoration: 'underline', lineHeight: 1.5 }}>{user.website}</span>
+            <div className="flex items-start gap-2 py-1.5 px-2 rounded-[10px] cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+              <LinkIcon size={12} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+              <span className="text-[11px] text-green-600 dark:text-green-400 underline leading-snug">{user.website}</span>
             </div>
           )}
-          <p style={{ fontSize: 11, color: '#94a3b8', padding: '4px 8px' }}>{user.joinedDate}</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 py-1 px-2">{user.joinedDate}</p>
         </div>
 
-        <button onClick={() => setShowMore(!showMore)} className="btn" style={{
-          width: '100%', marginTop: 8, color: '#16a34a', fontSize: 12, fontWeight: 600,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          padding: '8px 0', background: 'none', borderTop: '1px solid #f1f5f9',
-        }}>
+        <button
+          onClick={() => setShowMore(!showMore)}
+          className="btn w-full mt-2 text-green-600 dark:text-green-400 text-xs font-semibold flex items-center justify-center gap-1 py-2 border-t border-gray-100 dark:border-gray-700"
+        >
           {showMore ? 'Less' : 'More'}
           {showMore ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </button>
 
         {/* Connections */}
         {user.connections?.length > 0 && (
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12, marginTop: 4 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 8, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your network</p>
-            <div style={{ display: 'flex', marginLeft: -4 }}>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
+            <p className="text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-2 text-left uppercase tracking-wider">Your network</p>
+            <div className="flex -ml-1">
               {user.connections.slice(0, 4).map(c => (
-                <img key={c._id} src={c.avatar} alt={c.name} title={c.name}
-                  style={{
-                    width: 30, height: 30, borderRadius: '50%',
-                    border: '2px solid white', objectFit: 'cover',
-                    cursor: 'pointer', marginLeft: -6,
-                    transition: 'transform 0.2s ease',
-                  }}
+                <img
+                  key={c._id}
+                  src={c.avatar}
+                  alt={c.name}
+                  title={c.name}
+                  className="w-[30px] h-[30px] rounded-full border-2 border-white dark:border-gray-800 object-cover cursor-pointer -ml-1.5 hover:scale-110 hover:z-10 transition-transform"
                   onClick={() => navigate(`/profile/${c._id}`)}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.zIndex = 10; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.zIndex = 'auto'; }}
                 />
               ))}
             </div>
-            <button onClick={() => navigate('/network')} className="btn" style={{
-              background: 'none', padding: 0, color: '#16a34a', fontSize: 12,
-              fontWeight: 600, marginTop: 7, display: 'block', textAlign: 'left',
-            }}>View all connections →</button>
+            <button onClick={() => navigate('/network')} className="btn bg-transparent p-0 text-green-600 dark:text-green-400 text-xs font-semibold mt-1.5 block text-left">
+              View all connections →
+            </button>
           </div>
         )}
       </div>
@@ -1600,13 +1398,14 @@ const RightSidebar = () => {
 
   const displayedNews = showAllNews ? news : news.slice(0, 3);
 
-  const categoryColors = {
-    Market: { bg: '#fef3c7', color: '#92400e' },
-    Advisory: { bg: '#fee2e2', color: '#991b1b' },
-    Technology: { bg: '#dbeafe', color: '#1e40af' },
-    Sustainability: { bg: '#dcfce7', color: '#14532d' },
-    Government: { bg: '#ede9fe', color: '#4c1d95' },
+  const categoryClasses = {
+    Market: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300',
+    Advisory: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300',
+    Technology: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300',
+    Sustainability: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300',
+    Government: 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300',
   };
+  const getCategoryClass = (category) => categoryClasses[category] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
 
   return (
     <aside style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 80 }}>
@@ -1661,11 +1460,7 @@ const RightSidebar = () => {
             </div>
 
             {/* Tip */}
-            <div style={{
-              background: 'linear-gradient(135deg, #16a34a, #15803d)',
-              color: 'white', borderRadius: 12, padding: '11px 14px',
-              fontSize: 12, fontWeight: 600, lineHeight: 1.5,
-            }}>
+            <div className="bg-gradient-to-br from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-xl py-2.5 px-3.5 text-xs font-semibold leading-snug">
               {weather.tip}
             </div>
           </>
@@ -1737,31 +1532,25 @@ const RightSidebar = () => {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {displayedNews.map(item => {
-              const cat = categoryColors[item.category] || { bg: '#f1f5f9', color: '#475569' };
-              return (
+            {displayedNews.map(item => (
                 <a
-                key={item._id}
-                href={item.url}
-                target="_blank"
-                rel="noreferrer"
-                className="block py-2.5 px-2.5 rounded-xl no-underline transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
-              >
+                  key={item._id}
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block py-2.5 px-2.5 rounded-xl no-underline transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                >
                   <p className="line-clamp-2 text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug mb-1.5 hover:text-green-600 dark:hover:text-green-400 transition-colors">
                     {item.title}
                   </p>
                   <div className="flex items-center gap-2">
-                    <span
-                      className="text-[10px] font-bold py-0.5 px-2 rounded-full"
-                      style={{ background: cat.bg, color: cat.color }}
-                    >
+                    <span className={`text-[10px] font-bold py-0.5 px-2 rounded-full ${getCategoryClass(item.category)}`}>
                       {item.category}
                     </span>
                     <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatTimeAgo(item.publishedAt)}</span>
                   </div>
                 </a>
-              );
-            })}
+            ))}
             <button
               type="button"
               onClick={() => setShowAllNews(!showAllNews)}
@@ -1945,59 +1734,52 @@ const HomePage = () => {
             {/* AI Assistant (left) — guidance & doubt solving; hidden on mobile, shown from 768px */}
             <div style={{ display: 'none' }} className="profile-col">
               <div style={{ position: 'sticky', top: 80 }}>
-                <div className="card" style={{ overflow: 'hidden' }}>
-                  {/* Header banner */}
-                  <div style={{
-                    position: 'relative', height: 80, overflow: 'hidden',
-                    background: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Sparkles size={36} style={{ color: 'rgba(255,255,255,0.9)' }} />
+                <div className="card overflow-hidden border-0 shadow-md dark:shadow-none dark:ring-1 dark:ring-gray-700/50 transition-shadow hover:shadow-lg dark:hover:ring-green-500/20">
+                  {/* Header banner with subtle overlay */}
+                  <div className="relative h-20 overflow-hidden flex items-center justify-center bg-gradient-to-br from-emerald-800 via-green-700 to-emerald-600 dark:from-emerald-900 dark:via-green-800 dark:to-emerald-800">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" aria-hidden />
+                    <Sparkles size={40} className="relative text-white/95 drop-shadow-sm" strokeWidth={2.5} />
                   </div>
                   {/* Avatar / icon */}
-                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: -28, marginBottom: 10 }}>
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50 border-[3px] border-white dark:border-gray-800 shadow flex items-center justify-center">
+                  <div className="flex justify-center -mt-7 mb-3">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/60 dark:to-emerald-800/60 border-[3px] border-white dark:border-gray-800 shadow-lg flex items-center justify-center ring-2 ring-green-500/20">
                       <HelpCircle size={26} className="text-green-700 dark:text-green-400" />
                     </div>
                   </div>
                   {/* Info */}
-                  <div className="px-4 pb-4 text-center">
-                    <p className="font-bold text-sm text-gray-900 dark:text-gray-100">Krishi Assistant</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">
+                  <div className="px-4 pb-5 text-center">
+                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                      <span className="font-bold text-base text-gray-900 dark:text-gray-100">Krishi Assistant</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700/50">AI</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug">
                       Guidance & doubt solving for farming, crops & weather
                     </p>
                     {/* Quick actions */}
-                    <div className="grid grid-cols-2 gap-1.5 mt-3.5 p-2.5 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                    <div className="grid grid-cols-2 gap-2 mt-4 p-3 bg-green-50/80 dark:bg-green-900/20 rounded-xl border border-green-100/80 dark:border-green-800/30">
                       {[
                         { label: 'Crops', hint: 'Tips & pests' },
                         { label: 'Weather', hint: 'Forecast' },
                         { label: 'Market', hint: 'Prices' },
                         { label: 'Soil', hint: 'Health' },
                       ].map(({ label, hint }) => (
-                        <div
+                        <button
                           key={label}
-                          className="stat-hover text-center py-2 px-1 rounded-lg cursor-pointer"
+                          type="button"
+                          className="stat-hover text-center py-2.5 px-2 rounded-xl cursor-pointer transition-colors hover:bg-green-100/80 dark:hover:bg-green-800/30 focus:outline-none focus:ring-2 focus:ring-green-500/30"
                         >
                           <p className="font-bold text-xs text-green-700 dark:text-green-400">{label}</p>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{hint}</p>
-                        </div>
+                        </button>
                       ))}
                     </div>
                     <button
+                      type="button"
                       onClick={() => setShowAIChat(prev => !prev)}
-                      className="btn"
-                      style={{
-                        width: '100%', marginTop: 12, padding: '10px 0',
-                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                        color: 'white', borderRadius: 11, fontSize: 12, fontWeight: 700,
-                        boxShadow: '0 3px 10px rgb(22 163 74 / 0.3)',
-                        transition: 'all 0.15s ease',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 16px rgb(22 163 74 / 0.4)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px rgb(22 163 74 / 0.3)'; }}
+                      aria-label="Open Krishi Assistant chat"
+                      className="w-full mt-4 py-3 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-[0_3px_12px_rgb(22_163_74/0.35)] hover:shadow-[0_6px_20px_rgb(22_163_74/0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                     >
-                      <MessageSquare size={14} /> Ask a question
+                      <MessageSquare size={16} strokeWidth={2.5} /> Ask a question
                     </button>
                   </div>
                 </div>

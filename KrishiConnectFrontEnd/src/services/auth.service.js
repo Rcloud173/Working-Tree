@@ -32,4 +32,21 @@ export const authService = {
   verifyRegistrationOTP(payload) {
     return request('POST', '/auth/verify-registration-otp', payload);
   },
+
+  // Two-Factor Authentication (requires auth except verifyLoginOTP)
+  verifyPassword(payload) {
+    return request('POST', '/auth/verify-password', payload);
+  },
+  send2FAOtp() {
+    return request('POST', '/auth/send-2fa-otp');
+  },
+  enable2FA(payload) {
+    return request('POST', '/auth/enable-2fa', payload);
+  },
+  verifyLoginOTP(payload) {
+    return request('POST', '/auth/verify-login-otp', payload);
+  },
+  resendLoginOTP(payload) {
+    return request('POST', '/auth/resend-login-otp', payload);
+  },
 };

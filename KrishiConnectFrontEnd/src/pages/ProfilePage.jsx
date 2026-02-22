@@ -81,29 +81,29 @@ const EditProfileModal = ({ user, currentUserId, onClose, onSaved }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-white flex items-center justify-between p-5 border-b border-gray-100 rounded-t-2xl z-10">
-          <h2 className="font-bold text-gray-900 flex items-center gap-2"><Edit3 size={18} className="text-green-600" /> Edit Profile</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl text-gray-500"><X size={18} /></button>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl dark:shadow-none border border-transparent dark:border-gray-700">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 rounded-t-2xl z-10">
+          <h2 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2"><Edit3 size={18} className="text-green-600 dark:text-green-400" /> Edit Profile</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400"><X size={18} /></button>
         </div>
         <div className="p-5 space-y-4">
           {fields.map(({ key, label, type }) => (
             <div key={key}>
-              <label className="text-xs font-bold text-gray-500 block mb-1.5">{label}</label>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
               <input type={type} value={form[key] || ''} onChange={(e) => handleChange(key, e.target.value)}
-                className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 transition" />
+                className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 transition" />
             </div>
           ))}
           <div>
-            <label className="text-xs font-bold text-gray-500 block mb-1.5">Bio</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">Bio</label>
             <textarea value={form.bio || ''} onChange={(e) => handleChange('bio', e.target.value)}
-              rows={4} className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 resize-none transition" />
+              rows={4} className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 resize-none transition" />
           </div>
         </div>
-        <div className="sticky bottom-0 bg-white p-5 border-t border-gray-100 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition">Cancel</button>
+        <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-5 border-t border-gray-100 dark:border-gray-700 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
           <button onClick={handleSave} disabled={loading}
-            className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 disabled:opacity-40 transition flex items-center justify-center gap-2">
+            className="flex-1 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-40 transition flex items-center justify-center gap-2">
             {loading ? <Loader size={15} className="animate-spin" /> : <Check size={15} />}
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
@@ -117,18 +117,18 @@ const EditProfileModal = ({ user, currentUserId, onClose, onSaved }) => {
 // POST MINI CARD
 // ============================================================================
 const PostMiniCard = ({ post }) => (
-  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:shadow-none transition-all overflow-hidden">
     {post.mediaUrl && (
       <img src={post.mediaUrl} alt="post" className="w-full h-40 object-cover" />
     )}
     <div className="p-4">
-      <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">{post.content}</p>
+      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 leading-relaxed">{post.content}</p>
       <div className="flex flex-wrap gap-1.5 mt-2">
         {post.tags?.map(tag => (
-          <span key={tag} className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-100">#{tag}</span>
+          <span key={tag} className="px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full border border-green-100 dark:border-green-800">#{tag}</span>
         ))}
       </div>
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500">
         <span className="flex items-center gap-1"><Heart size={11} />{formatNumber(post.likesCount)}</span>
         <span className="flex items-center gap-1"><MessageSquare size={11} />{post.commentsCount}</span>
         <span className="flex items-center gap-1"><Bookmark size={11} />{post.savedCount}</span>
@@ -139,17 +139,17 @@ const PostMiniCard = ({ post }) => (
 );
 
 const SavedPostCard = ({ post }) => (
-  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:shadow-none transition-all overflow-hidden">
     {post.mediaUrl && (
       <img src={post.mediaUrl} alt="post" className="w-full h-36 object-cover" />
     )}
     <div className="p-4">
       <div className="flex items-center gap-2 mb-2">
         {post.author?.avatar && <img src={post.author.avatar} alt={post.author.name} className="w-6 h-6 rounded-full object-cover" />}
-        <span className="text-xs font-semibold text-gray-600">{post.author?.name || 'User'}</span>
-        {post.savedAt && <span className="text-xs text-gray-400 ml-auto">Saved {post.savedAt}</span>}
+        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{post.author?.name || 'User'}</span>
+        {post.savedAt && <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Saved {post.savedAt}</span>}
       </div>
-      <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">{post.content}</p>
+      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 leading-relaxed">{post.content}</p>
     </div>
   </div>
 );
@@ -336,18 +336,18 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <div className="max-w-3xl mx-auto">
         <div className="animate-pulse">
-          <div className="h-48 bg-gray-200" />
-          <div className="bg-white px-6 pb-5">
+          <div className="h-48 bg-gray-200 dark:bg-gray-700" />
+          <div className="bg-white dark:bg-gray-800 px-6 pb-5 transition-colors duration-200">
             <div className="flex items-end gap-4 -mt-12 mb-4">
-              <div className="w-24 h-24 rounded-full bg-gray-300 border-4 border-white" />
+              <div className="w-24 h-24 rounded-full bg-gray-300 dark:bg-gray-600 border-4 border-white dark:border-gray-800" />
               <div className="flex-1 pt-16 space-y-2">
-                <div className="h-5 bg-gray-200 rounded w-1/3" />
-                <div className="h-3 bg-gray-100 rounded w-1/2" />
+                <div className="h-5 bg-gray-200 dark:bg-gray-600 rounded w-1/3" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/2" />
               </div>
             </div>
             <div className="space-y-2">
-              <div className="h-3 bg-gray-100 rounded" />
-              <div className="h-3 bg-gray-100 rounded w-5/6" />
+              <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded" />
+              <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-5/6" />
             </div>
           </div>
         </div>
@@ -356,16 +356,16 @@ const ProfilePage = () => {
   );
 
   if (error) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl border border-red-100 p-10 text-center shadow-sm">
-        <AlertCircle size={40} className="text-red-400 mx-auto mb-3" />
-        <p className="font-semibold text-gray-700">{error}</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900/50 p-10 text-center shadow-sm dark:shadow-none transition-colors duration-200">
+        <AlertCircle size={40} className="text-red-400 dark:text-red-500 mx-auto mb-3" />
+        <p className="font-semibold text-gray-700 dark:text-gray-300">{error}</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <button onClick={loadProfile} className="px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition flex items-center gap-2">
+          <button onClick={loadProfile} className="px-6 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl text-sm font-semibold hover:bg-green-700 dark:hover:bg-green-600 transition flex items-center gap-2">
             <RefreshCw size={14} /> Retry
           </button>
           {error.includes('log in') && (
-            <button onClick={() => navigate('/login')} className="px-6 py-2 border border-green-600 text-green-700 rounded-xl text-sm font-semibold hover:bg-green-50 transition">
+            <button onClick={() => navigate('/login')} className="px-6 py-2 border border-green-600 dark:border-green-500 text-green-700 dark:text-green-400 rounded-xl text-sm font-semibold hover:bg-green-50 dark:hover:bg-green-900/20 transition">
               Log in
             </button>
           )}
@@ -413,7 +413,7 @@ const ProfilePage = () => {
             <div className="flex items-end justify-between -mt-14 sm:-mt-16 pb-4">
               <div className="relative group">
                 <img src={user.profilePhoto} alt={user.name}
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-white shadow-md" />
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-md" />
                 {user.isOwnProfile && (
                   <button onClick={() => profilePhotoInputRef.current?.click()}
                     className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
@@ -421,7 +421,7 @@ const ProfilePage = () => {
                   </button>
                 )}
                 {user.verified && (
-                  <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
                     <CheckCircle size={13} className="text-white" />
                   </div>
                 )}
@@ -433,7 +433,7 @@ const ProfilePage = () => {
                 </button>
                 {user.isOwnProfile ? (
                   <button onClick={() => setShowEditModal(true)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition flex items-center gap-1.5 shadow-sm">
+                    className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-700 dark:hover:bg-green-600 transition flex items-center gap-1.5 shadow-sm">
                     <Edit3 size={13} /> {t('profile.editProfile')}
                   </button>
                 ) : (
@@ -445,7 +445,7 @@ const ProfilePage = () => {
                   </button>
                     {canChat && (
                       <button onClick={handleChat} disabled={chatLoading}
-                        className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 shadow-sm transition flex items-center gap-1.5">
+                        className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-700 dark:hover:bg-green-600 shadow-sm transition flex items-center gap-1.5">
                         {chatLoading ? <Loader size={13} className="animate-spin" /> : <MessageSquare size={13} />}
                         {t('profile.chat')}
                       </button>
@@ -458,52 +458,52 @@ const ProfilePage = () => {
             {/* Name & Info */}
             <div className="pb-5">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-gray-900">{user.name}</h1>
-                {user.verified && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">✓ Verified</span>}
+                <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">{user.name}</h1>
+                {user.verified && <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/40 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-800">✓ Verified</span>}
               </div>
-              <p className="text-sm text-gray-600 mt-0.5 font-medium">{user.headline}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 font-medium">{user.headline}</p>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
                 {user.location && (
-                  <span className="flex items-center gap-1 text-xs text-gray-500"><MapPin size={11} className="text-green-600" />{user.location}</span>
+                  <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><MapPin size={11} className="text-green-600 dark:text-green-400" />{user.location}</span>
                 )}
                 {user.website && (
                   <a href={`https://${user.website}`} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-green-600 hover:underline font-medium">
+                    className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline font-medium">
                     <LinkIcon size={11} />{user.website}
                   </a>
                 )}
                 {user.joinedDate && (
-                  <span className="flex items-center gap-1 text-xs text-gray-400"><Calendar size={11} />Joined {user.joinedDate}</span>
+                  <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><Calendar size={11} />Joined {user.joinedDate}</span>
                 )}
               </div>
 
               {user.bio && (
-                <p className="text-sm text-gray-600 mt-3 leading-relaxed">{user.bio}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">{user.bio}</p>
               )}
 
               {/* Crops */}
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {user.crops?.map(crop => (
-                  <span key={crop} className="px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">🌱 {crop}</span>
+                  <span key={crop} className="px-2.5 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded-full border border-green-100 dark:border-green-800">🌱 {crop}</span>
                 ))}
               </div>
             </div>
           </div>
 
           {/* Stats Bar */}
-          <div className="border-t border-gray-100 px-5 sm:px-8 py-4">
+          <div className="border-t border-gray-100 dark:border-gray-700 px-5 sm:px-8 py-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: t('profile.followers'), value: formatNumber(user.followersCount), icon: Users, color: 'text-green-600' },
-                { label: t('profile.following'), value: formatNumber(user.followingCount), icon: Users, color: 'text-blue-600' },
-                { label: t('profile.posts'), value: user.postsCount, icon: BookOpen, color: 'text-purple-600' },
-                { label: t('profile.profileViews'), value: user.profileViewers, icon: Eye, color: 'text-orange-600' },
+                { label: t('profile.followers'), value: formatNumber(user.followersCount), icon: Users, color: 'text-green-600 dark:text-green-400' },
+                { label: t('profile.following'), value: formatNumber(user.followingCount), icon: Users, color: 'text-blue-600 dark:text-blue-400' },
+                { label: t('profile.posts'), value: user.postsCount, icon: BookOpen, color: 'text-purple-600 dark:text-purple-400' },
+                { label: t('profile.profileViews'), value: user.profileViewers, icon: Eye, color: 'text-orange-600 dark:text-orange-400' },
               ].map(({ label, value, icon: Icon, color }) => (
-                <div key={label} className="text-center p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition group">
+                <div key={label} className="text-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl cursor-pointer transition group">
                   <Icon size={16} className={`${color} mx-auto mb-1 group-hover:scale-110 transition-transform`} />
-                  <p className="text-lg font-black text-gray-900">{value}</p>
-                  <p className="text-xs text-gray-400">{label}</p>
+                  <p className="text-lg font-black text-gray-900 dark:text-gray-100">{value}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
                 </div>
               ))}
             </div>
@@ -511,32 +511,32 @@ const ProfilePage = () => {
 
           {/* Expandable Details */}
           <div className={`overflow-hidden transition-all duration-300 ${showMoreInfo ? 'max-h-96' : 'max-h-0'}`}>
-            <div className="px-5 sm:px-8 pb-5 pt-1 border-t border-gray-100">
+            <div className="px-5 sm:px-8 pb-5 pt-1 border-t border-gray-100 dark:border-gray-700">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {user.education && (
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                    <Award size={15} className="text-green-600 mt-0.5 flex-shrink-0" />
-                    <div><p className="text-xs font-bold text-gray-500">Education</p><p className="text-sm text-gray-700 mt-0.5">{user.education}</p></div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <Award size={15} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div><p className="text-xs font-bold text-gray-500 dark:text-gray-400">Education</p><p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{user.education}</p></div>
                   </div>
                 )}
                 {user.experience && (
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                    <Briefcase size={15} className="text-green-600 mt-0.5 flex-shrink-0" />
-                    <div><p className="text-xs font-bold text-gray-500">Experience</p><p className="text-sm text-gray-700 mt-0.5">{user.experience}</p></div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <Briefcase size={15} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div><p className="text-xs font-bold text-gray-500 dark:text-gray-400">Experience</p><p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{user.experience}</p></div>
                   </div>
                 )}
                 {user.phone && (
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                    <Phone size={15} className="text-green-600 mt-0.5 flex-shrink-0" />
-                    <div><p className="text-xs font-bold text-gray-500">Contact</p><p className="text-sm text-gray-700 mt-0.5">{user.phone}</p></div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <Phone size={15} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div><p className="text-xs font-bold text-gray-500 dark:text-gray-400">Contact</p><p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{user.phone}</p></div>
                   </div>
                 )}
                 {user.certifications?.length > 0 && (
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                    <Star size={15} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <Star size={15} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs font-bold text-gray-500">Certifications</p>
-                      {user.certifications.map(cert => <p key={cert} className="text-sm text-gray-700 mt-0.5">{cert}</p>)}
+                      <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Certifications</p>
+                      {user.certifications.map(cert => <p key={cert} className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{cert}</p>)}
                     </div>
                   </div>
                 )}
@@ -545,25 +545,25 @@ const ProfilePage = () => {
           </div>
 
           <button onClick={() => setShowMoreInfo(!showMoreInfo)}
-            className="w-full py-3 text-sm text-green-700 font-bold hover:bg-green-50 transition flex items-center justify-center gap-1.5 border-t border-gray-100">
+            className="w-full py-3 text-sm text-green-700 dark:text-green-400 font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition flex items-center justify-center gap-1.5 border-t border-gray-100 dark:border-gray-700">
             {showMoreInfo ? <><ChevronUp size={15} /> Show Less</> : <><ChevronDown size={15} /> Show More Details</>}
           </button>
         </div>
 
         {/* Impact Stats (from MongoDB: profileViewers, postImpressions, savedCount) */}
         {user.isOwnProfile && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mt-4 mx-4 sm:mx-0 p-5">
-            <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"><TrendingUp size={15} className="text-green-600" /> Your Impact This Week</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none mt-4 mx-4 sm:mx-0 p-5 transition-colors duration-200">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2"><TrendingUp size={15} className="text-green-600 dark:text-green-400" /> Your Impact This Week</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: 'Profile Views', value: user.profileViewers ?? 0, change: user.profileViewersChange ?? null },
                 { label: 'Post Impressions', value: user.postImpressions ?? 0, change: user.postImpressionsChange ?? null },
                 { label: 'Saved Posts', value: user.savedCount ?? 0, change: user.savedCountChange ?? null },
               ].map(({ label, value, change }) => (
-                <div key={label} className="text-center p-3 bg-green-50 rounded-xl border border-green-100">
-                  <p className="text-xl font-black text-green-700">{formatNumber(value)}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-                  <p className={`text-xs font-bold mt-1 ${change != null && String(change).startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
+                <div key={label} className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                  <p className="text-xl font-black text-green-700 dark:text-green-400">{formatNumber(value)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
+                  <p className={`text-xs font-bold mt-1 ${change != null && String(change).startsWith('-') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     {change != null ? (typeof change === 'number' ? (change >= 0 ? `+${change}` : String(change)) : change) : '—'}
                   </p>
                 </div>
@@ -573,14 +573,14 @@ const ProfilePage = () => {
         )}
 
         {/* Tabs + Content */}
-        <div className="bg-white rounded-t-none mt-4 shadow-sm">
-          <div className="flex border-b border-gray-100 px-4 sticky top-0 bg-white z-10">
+        <div className="bg-white dark:bg-gray-800 rounded-t-none mt-4 shadow-sm dark:shadow-none transition-colors duration-200">
+          <div className="flex border-b border-gray-100 dark:border-gray-700 px-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
             {[
               { id: 'posts', label: `Posts (${user.postsCount ?? 0})` },
               ...(isOwnProfile ? [{ id: 'saved', label: `Saved (${user.savedCount ?? 0})` }] : []),
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3.5 text-sm font-bold border-b-2 transition mr-1 ${activeTab === tab.id ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                className={`px-5 py-3.5 text-sm font-bold border-b-2 transition mr-1 ${activeTab === tab.id ? 'border-green-600 dark:border-green-500 text-green-700 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                 {tab.label}
               </button>
             ))}
@@ -590,20 +590,20 @@ const ProfilePage = () => {
             {postsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className="bg-gray-50 rounded-2xl animate-pulse h-48 border border-gray-100" />
+                  <div key={i} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl animate-pulse h-48 border border-gray-100 dark:border-gray-700" />
                 ))}
               </div>
             ) : activeTab === 'posts' && posts.length === 0 ? (
               <div className="py-12 text-center">
                 <div className="text-4xl mb-3">🌱</div>
-                <p className="font-bold text-gray-700">No posts yet</p>
-                <p className="text-gray-400 text-sm mt-1">Share your farming experiences!</p>
+                <p className="font-bold text-gray-700 dark:text-gray-300">No posts yet</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Share your farming experiences!</p>
               </div>
             ) : activeTab === 'saved' && savedPosts.length === 0 ? (
               <div className="py-12 text-center">
                 <div className="text-4xl mb-3">🔖</div>
-                <p className="font-bold text-gray-700">No saved posts</p>
-                <p className="text-gray-400 text-sm mt-1">Bookmark posts to see them here</p>
+                <p className="font-bold text-gray-700 dark:text-gray-300">No saved posts</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Bookmark posts to see them here</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -11,6 +11,10 @@ const {
   forgotPasswordEmailSchema,
   resetPasswordWithOTPSchema,
   resendOTPSchema,
+  verifyPasswordSchema,
+  enable2FASchema,
+  verifyLoginOTPSchema,
+  resendLoginOTPSchema,
 } = require('./auth.validation');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const { authLimiter, registerLimiter, forgotPasswordLimiter } = require('../../middlewares/rateLimit.middleware');
@@ -27,5 +31,12 @@ router.post('/logout', authenticate, authController.logout);
 router.post('/forgot-password', forgotPasswordLimiter, validate(forgotPasswordEmailSchema), authController.forgotPassword);
 router.post('/reset-password', validate(resetPasswordWithOTPSchema), authController.resetPasswordWithOTP);
 router.post('/resend-otp', validate(resendOTPSchema), authController.resendOTP);
+
+router.post('/verify-password', authenticate, validate(verifyPasswordSchema), authController.verifyPassword);
+router.post('/send-2fa-otp', authenticate, authController.send2FAOtp);
+router.post('/enable-2fa', authenticate, validate(enable2FASchema), authController.enable2FA);
+
+router.post('/verify-login-otp', validate(verifyLoginOTPSchema), authController.verifyLoginOTP);
+router.post('/resend-login-otp', validate(resendLoginOTPSchema), authController.resendLoginOTP);
 
 module.exports = router;

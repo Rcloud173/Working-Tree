@@ -75,6 +75,23 @@ const resendOTPSchema = Joi.object({
   otpId: Joi.string().required(),
 });
 
+const verifyPasswordSchema = Joi.object({
+  password: Joi.string().required(),
+});
+
+const enable2FASchema = Joi.object({
+  otp: Joi.string().length(6).required(),
+});
+
+const verifyLoginOTPSchema = Joi.object({
+  userId: Joi.string().required(),
+  otp: Joi.string().length(6).required(),
+});
+
+const resendLoginOTPSchema = Joi.object({
+  userId: Joi.string().required(),
+});
+
 const validate = (schema) => (req, res, next) => {
   const { error, value } = schema.validate(req.body, {
     abortEarly: false,
@@ -103,5 +120,9 @@ module.exports = {
   forgotPasswordEmailSchema,
   resetPasswordWithOTPSchema,
   resendOTPSchema,
+  verifyPasswordSchema,
+  enable2FASchema,
+  verifyLoginOTPSchema,
+  resendLoginOTPSchema,
   validate,
 };

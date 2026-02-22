@@ -191,10 +191,10 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
 
 /** Row inside a section: label + toggle or children */
 const SettingRow = ({ label, description, children }) => (
-  <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/50 transition-colors">
+  <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
     <div className="min-w-0">
-      <p className="text-sm font-semibold text-gray-800">{label}</p>
-      {description && <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{description}</p>}
+      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{label}</p>
+      {description && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-relaxed">{description}</p>}
     </div>
     <div className="flex-shrink-0">{children}</div>
   </div>
@@ -220,21 +220,21 @@ const Toast = ({ message, type, onDismiss }) => {
 
 /** Section skeleton loader */
 const SectionSkeleton = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm animate-pulse overflow-hidden">
-    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
-      <div className="w-8 h-8 rounded-xl bg-gray-200" />
+  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none animate-pulse overflow-hidden transition-colors duration-200">
+    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-xl bg-gray-200 dark:bg-gray-600" />
       <div className="space-y-1.5">
-        <div className="h-3.5 w-28 bg-gray-200 rounded" />
-        <div className="h-2.5 w-44 bg-gray-100 rounded" />
+        <div className="h-3.5 w-28 bg-gray-200 dark:bg-gray-600 rounded" />
+        <div className="h-2.5 w-44 bg-gray-100 dark:bg-gray-700 rounded" />
       </div>
     </div>
     {[1, 2, 3].map(i => (
-      <div key={i} className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+      <div key={i} className="flex items-center justify-between px-6 py-4 border-b border-gray-50 dark:border-gray-700">
         <div className="space-y-1.5">
-          <div className="h-3.5 w-36 bg-gray-200 rounded" />
-          <div className="h-2.5 w-52 bg-gray-100 rounded" />
+          <div className="h-3.5 w-36 bg-gray-200 dark:bg-gray-600 rounded" />
+          <div className="h-2.5 w-52 bg-gray-100 dark:bg-gray-700 rounded" />
         </div>
-        <div className="h-6 w-11 bg-gray-200 rounded-full" />
+        <div className="h-6 w-11 bg-gray-200 dark:bg-gray-600 rounded-full" />
       </div>
     ))}
   </div>
@@ -307,10 +307,10 @@ const ProfileSection = ({ data, onSave, onToast }) => {
       <SectionHeader icon={User} title="Profile Settings" subtitle="Update your public farmer profile" />
 
       {/* Avatar */}
-      <div className="px-5 sm:px-6 py-5 border-b border-gray-100 flex items-center gap-4">
+      <div className="px-5 sm:px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex items-center gap-4">
         <div className="relative group flex-shrink-0">
           <img src={profilePhotoPreview} alt="Profile"
-            className="w-20 h-20 rounded-full object-cover border-4 border-green-100 shadow-sm" />
+            className="w-20 h-20 rounded-full object-cover border-4 border-green-100 dark:border-green-800 shadow-sm" />
           <button onClick={() => fileRef.current?.click()}
             className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
             <Camera size={18} className="text-white" />
@@ -318,10 +318,10 @@ const ProfileSection = ({ data, onSave, onToast }) => {
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleProfilePhotoChange} />
         </div>
         <div>
-          <p className="text-sm font-bold text-gray-800">Profile Photo</p>
-          <p className="text-xs text-gray-400 mt-0.5">JPG, PNG or WebP · Max 5MB</p>
+          <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Profile Photo</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">JPG, PNG or WebP · Max 5MB</p>
           <button onClick={() => fileRef.current?.click()}
-            className="mt-2 text-xs font-bold text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200 transition flex items-center gap-1.5">
+            className="mt-2 text-xs font-bold text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-700 transition flex items-center gap-1.5">
             <Camera size={12} /> Change Photo
           </button>
         </div>
@@ -336,16 +336,16 @@ const ProfileSection = ({ data, onSave, onToast }) => {
           { field: 'phone',    label: 'Phone Number',    type: 'tel',   placeholder: '+91 XXXXX XXXXX' },
         ].map(({ field, label, type, placeholder }) => (
           <div key={field}>
-            <label className="text-xs font-bold text-gray-500 block mb-1.5">{label}</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
             <input
               type={type}
               value={form[field] || ''}
               onChange={(e) => set(field, e.target.value)}
               placeholder={placeholder}
-              className={`w-full px-4 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 transition ${
+              className={`w-full px-4 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 transition text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
                 errors[field]
-                  ? 'border-red-300 focus:ring-red-100 bg-red-50'
-                  : 'border-gray-200 focus:ring-green-200 focus:border-green-400'
+                  ? 'border border-red-300 dark:border-red-600 focus:ring-red-100 dark:focus:ring-red-900/40 bg-red-50 dark:bg-red-900/20'
+                  : 'border border-gray-200 dark:border-gray-600 focus:ring-green-200 dark:focus:ring-green-600 focus:border-green-400 dark:focus:border-green-500 bg-white dark:bg-gray-700'
               }`}
             />
             {errors[field] && (
@@ -355,22 +355,22 @@ const ProfileSection = ({ data, onSave, onToast }) => {
         ))}
 
         <div>
-          <label className="text-xs font-bold text-gray-500 block mb-1.5">Bio</label>
+          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">Bio</label>
           <textarea
             value={form.bio || ''}
             onChange={(e) => set('bio', e.target.value)}
             rows={3}
             maxLength={200}
             placeholder="Tell other farmers about yourself..."
-            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 resize-none transition"
+            className="w-full px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600 bg-white dark:bg-gray-700 resize-none transition"
           />
-          <p className="text-xs text-gray-400 text-right mt-1">{(form.bio || '').length}/200</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">{(form.bio || '').length}/200</p>
         </div>
       </div>
 
-      <div className="px-5 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/40 flex justify-end">
+      <div className="px-5 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/50 flex justify-end transition-colors duration-200">
         <button onClick={handleSave} disabled={loading}
-          className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition flex items-center gap-2 shadow-sm hover:shadow-md">
+          className="px-6 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition flex items-center gap-2 shadow-sm hover:shadow-md">
           {loading ? <Loader size={15} className="animate-spin" /> : <Save size={15} />}
           {loading ? 'Saving...' : 'Save Profile'}
         </button>
@@ -445,23 +445,23 @@ const AccountSection = ({ data, onToast }) => {
       <SectionHeader icon={Key} title="Account Settings" subtitle="Manage password and account visibility" />
 
       {/* Change Password */}
-      <div className="px-5 sm:px-6 py-5 border-b border-gray-100 space-y-4">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Change Password</p>
+      <div className="px-5 sm:px-6 py-5 border-b border-gray-100 dark:border-gray-700 space-y-4">
+        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Change Password</p>
         {pwFields.map(({ field, label, key }) => (
           <div key={field}>
-            <label className="text-xs font-bold text-gray-500 block mb-1.5">{label}</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">{label}</label>
             <div className="relative">
               <input
                 type={showPw[key] ? 'text' : 'password'}
                 value={pwForm[key]}
                 onChange={(e) => setPw(key, e.target.value)}
                 placeholder="••••••••"
-                className={`w-full px-4 py-2.5 pr-10 text-sm border rounded-xl focus:outline-none focus:ring-2 transition ${
-                  pwErrors[key] ? 'border-red-300 focus:ring-red-100 bg-red-50' : 'border-gray-200 focus:ring-green-200'
+                className={`w-full px-4 py-2.5 pr-10 text-sm rounded-xl focus:outline-none focus:ring-2 transition text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                  pwErrors[key] ? 'border border-red-300 dark:border-red-600 focus:ring-red-100 dark:focus:ring-red-900/40 bg-red-50 dark:bg-red-900/20' : 'border border-gray-200 dark:border-gray-600 focus:ring-green-200 dark:focus:ring-green-600 bg-white dark:bg-gray-700'
                 }`}
               />
               <button onClick={() => togglePw(key)} type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition">
                 {showPw[key] ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
@@ -471,14 +471,14 @@ const AccountSection = ({ data, onToast }) => {
           </div>
         ))}
         <button onClick={handlePasswordChange} disabled={pwLoading}
-          className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition flex items-center gap-2 shadow-sm">
+          className="px-5 py-2.5 bg-green-600 dark:bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition flex items-center gap-2 shadow-sm">
           {pwLoading ? <Loader size={14} className="animate-spin" /> : <Lock size={14} />}
           {pwLoading ? 'Updating...' : 'Update Password'}
         </button>
       </div>
 
       {/* Account Toggles */}
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-50 dark:divide-gray-700">
         <SettingRow label="Public Account" description="Anyone can view your profile and posts">
           {toggleLoading.isPublic
             ? <Loader size={16} className="text-green-600 animate-spin" />
@@ -523,20 +523,20 @@ const NotificationsSection = ({ data, onToast }) => {
   return (
     <SectionCard>
       <SectionHeader icon={Bell} title="Notifications" subtitle="Control how and when we reach you" />
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-50 dark:divide-gray-700">
         {rows.map(({ field, icon: Icon, label, desc }) => (
-          <div key={field} className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/50 transition-colors">
+          <div key={field} className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${notifs[field] ? 'bg-green-50' : 'bg-gray-100'}`}>
-                <Icon size={15} className={notifs[field] ? 'text-green-600' : 'text-gray-400'} />
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${notifs[field] ? 'bg-green-50 dark:bg-green-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                <Icon size={15} className={notifs[field] ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">{label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{label}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{desc}</p>
               </div>
             </div>
             {loading[field]
-              ? <Loader size={16} className="text-green-600 animate-spin flex-shrink-0" />
+              ? <Loader size={16} className="text-green-600 dark:text-green-400 animate-spin flex-shrink-0" />
               : <Toggle checked={notifs[field]} onChange={(v) => handleToggle(field, v)} />}
           </div>
         ))}
@@ -597,23 +597,23 @@ const PrivacySection = ({ data, onToast }) => {
     <SectionCard>
       <SectionHeader icon={Shield} title="Privacy & Security" subtitle="Protect your account and control your data" />
 
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-50 dark:divide-gray-700">
         {/* 2FA */}
-        <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/50 transition-colors">
+        <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${privacy.twoFactor ? 'bg-green-50' : 'bg-gray-100'}`}>
-              <Shield size={15} className={privacy.twoFactor ? 'text-green-600' : 'text-gray-400'} />
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${privacy.twoFactor ? 'bg-green-50 dark:bg-green-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+              <Shield size={15} className={privacy.twoFactor ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-semibold text-gray-800">Two-Factor Authentication</p>
-                {privacy.twoFactor && <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">ON</span>}
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Two-Factor Authentication</p>
+                {privacy.twoFactor && <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/40 px-1.5 py-0.5 rounded-full border border-green-100 dark:border-green-800">ON</span>}
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Add an extra security layer to your account</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Add an extra security layer to your account</p>
             </div>
           </div>
           {loading.twoFactor
-            ? <Loader size={16} className="text-green-600 animate-spin flex-shrink-0" />
+            ? <Loader size={16} className="text-green-600 dark:text-green-400 animate-spin flex-shrink-0" />
             : <Toggle checked={privacy.twoFactor} onChange={(v) => handleToggle('twoFactor', v)} />}
         </div>
 
@@ -626,9 +626,9 @@ const PrivacySection = ({ data, onToast }) => {
       </div>
 
       {/* Blocked Users */}
-      <div className="border-t border-gray-100">
-        <div className="px-5 sm:px-6 py-3 bg-gray-50/40">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+      <div className="border-t border-gray-100 dark:border-gray-700">
+        <div className="px-5 sm:px-6 py-3 bg-gray-50/40 dark:bg-gray-800/50">
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
             <UserX size={12} /> Blocked Users ({blockedUsers.length})
           </p>
         </div>
@@ -636,31 +636,31 @@ const PrivacySection = ({ data, onToast }) => {
           <div className="px-6 py-4 space-y-3 animate-pulse">
             {[1, 2].map(i => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 bg-gray-200 rounded w-1/3" />
-                  <div className="h-2.5 bg-gray-100 rounded w-1/4" />
+                  <div className="h-3.5 bg-gray-200 dark:bg-gray-600 rounded w-1/3" />
+                  <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded w-1/4" />
                 </div>
-                <div className="h-8 w-20 bg-gray-200 rounded-xl" />
+                <div className="h-8 w-20 bg-gray-200 dark:bg-gray-600 rounded-xl" />
               </div>
             ))}
           </div>
         ) : blockedUsers.length === 0 ? (
           <div className="px-6 py-6 text-center">
-            <UserX size={32} className="text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No blocked users</p>
+            <UserX size={32} className="text-gray-200 dark:text-gray-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">No blocked users</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-gray-700">
             {blockedUsers.map(user => (
-              <div key={user._id} className="flex items-center gap-3 px-5 sm:px-6 py-3.5 hover:bg-gray-50 transition-colors">
-                <img src={user.profilePhoto || user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-gray-100 flex-shrink-0" />
+              <div key={user._id} className="flex items-center gap-3 px-5 sm:px-6 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <img src={user.profilePhoto || user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-gray-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{user.name}</p>
-                  <p className="text-xs text-gray-400">Blocked {user.blockedSince}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{user.name}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Blocked {user.blockedSince}</p>
                 </div>
                 <button onClick={() => handleUnblock(user._id)} disabled={unblocking[user._id]}
-                  className="px-3 py-1.5 text-xs font-bold border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition flex items-center gap-1.5 flex-shrink-0">
+                  className="px-3 py-1.5 text-xs font-bold border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition flex items-center gap-1.5 flex-shrink-0">
                   {unblocking[user._id] ? <Loader size={11} className="animate-spin" /> : <Check size={11} />}
                   Unblock
                 </button>
@@ -775,7 +775,7 @@ const PreferencesSection = ({ data, onToast }) => {
             </select>
             {languageSaving && (
               <span className="absolute right-10 top-1/2 -translate-y-1/2">
-                <Loader size={14} className="animate-spin text-green-600" />
+                <Loader size={14} className="animate-spin text-green-600 dark:text-green-400" />
               </span>
             )}
           </div>
@@ -853,50 +853,50 @@ const DangerSection = ({ onToast }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
-            <div className="p-5 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <AlertTriangle size={18} className="text-red-500" />
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl dark:shadow-none border border-transparent dark:border-gray-700">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-50 dark:bg-red-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={18} className="text-red-500 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900">Delete Account</h3>
-                <p className="text-xs text-gray-400 mt-0.5">This action is permanent and cannot be undone</p>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">Delete Account</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">This action is permanent and cannot be undone</p>
               </div>
-              <button onClick={() => setShowDeleteModal(false)} className="ml-auto p-2 hover:bg-gray-100 rounded-xl text-gray-400">
+              <button onClick={() => setShowDeleteModal(false)} className="ml-auto p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-400 dark:text-gray-500">
                 <X size={16} />
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-1">
-                <p className="text-sm font-bold text-red-700">What will be deleted:</p>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 space-y-1">
+                <p className="text-sm font-bold text-red-700 dark:text-red-300">What will be deleted:</p>
                 {['Your profile and all personal information', 'All your posts, comments & media', 'Your connections and messages', 'Access to all KrishiConnect features'].map(item => (
-                  <div key={item} className="flex items-start gap-2 text-xs text-red-600">
+                  <div key={item} className="flex items-start gap-2 text-xs text-red-600 dark:text-red-400">
                     <X size={11} className="mt-0.5 flex-shrink-0" />{item}
                   </div>
                 ))}
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1.5">Confirm with your password</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-1.5">Confirm with your password</label>
                 <div className="relative">
                   <input type={showDeletePw ? 'text' : 'password'}
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
                     placeholder="Enter your current password"
-                    className="w-full px-4 py-2.5 pr-10 text-sm border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 bg-red-50" />
+                    className="w-full px-4 py-2.5 pr-10 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border border-red-200 dark:border-red-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 dark:focus:ring-red-800 bg-red-50 dark:bg-red-900/20" />
                   <button onClick={() => setShowDeletePw(!showDeletePw)} type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                     {showDeletePw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
               </div>
             </div>
-            <div className="p-5 border-t border-gray-100 flex gap-3">
+            <div className="p-5 border-t border-gray-100 dark:border-gray-700 flex gap-3">
               <button onClick={() => { setShowDeleteModal(false); setDeletePassword(''); }}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">
+                className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                 Cancel
               </button>
               <button onClick={handleDeleteAccount} disabled={!deletePassword.trim() || deleteLoading}
-                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-40 transition flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-red-500 dark:bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-600 dark:hover:bg-red-700 disabled:opacity-40 transition flex items-center justify-center gap-2">
                 {deleteLoading ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
                 {deleteLoading ? 'Deleting...' : 'Delete My Account'}
               </button>
@@ -907,15 +907,15 @@ const DangerSection = ({ onToast }) => {
 
       <SectionCard>
         <SectionHeader icon={AlertTriangle} title="Danger Zone" subtitle="Irreversible actions — proceed with caution" />
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 dark:divide-gray-700">
           {/* Logout */}
           <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4">
             <div>
-              <p className="text-sm font-semibold text-gray-800">Sign Out</p>
-              <p className="text-xs text-gray-400 mt-0.5">Log out from your current session</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Sign Out</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Log out from your current session</p>
             </div>
             <button onClick={handleLogout} disabled={logoutLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-200 transition disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50">
               {logoutLoading ? <Loader size={13} className="animate-spin" /> : <LogOut size={13} />}
               {logoutLoading ? 'Signing out...' : 'Sign Out'}
             </button>
@@ -924,11 +924,11 @@ const DangerSection = ({ onToast }) => {
           {/* Delete Account */}
           <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4">
             <div>
-              <p className="text-sm font-bold text-red-600">Delete Account</p>
-              <p className="text-xs text-gray-400 mt-0.5">Permanently erase all your data from KrishiConnect</p>
+              <p className="text-sm font-bold text-red-600 dark:text-red-400">Delete Account</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Permanently erase all your data from KrishiConnect</p>
             </div>
             <button onClick={() => setShowDeleteModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition">
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition">
               <Trash2 size={13} /> Delete
             </button>
           </div>
@@ -1051,7 +1051,7 @@ const SettingsPage = () => {
                         : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}>
-                  <Icon size={16} className={activeSection === id && id === 'danger' ? 'text-red-500' : activeSection === id ? 'text-green-600' : 'text-gray-400'} />
+                  <Icon size={16} className={activeSection === id && id === 'danger' ? 'text-red-500 dark:text-red-400' : activeSection === id ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
                   {t(labelKey)}
                   {activeSection === id && (
                     <ChevronRight size={13} className="ml-auto opacity-50" />
@@ -1065,11 +1065,11 @@ const SettingsPage = () => {
           <main ref={contentRef} className="flex-1 min-w-0 space-y-5">
             {/* Error State */}
             {error && (
-              <div className="bg-white rounded-2xl border border-red-100 p-8 text-center shadow-sm">
-                <AlertCircle size={40} className="text-red-400 mx-auto mb-3" />
-                <p className="font-semibold text-gray-700">{error}</p>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900/50 p-8 text-center shadow-sm dark:shadow-none transition-colors duration-200">
+                <AlertCircle size={40} className="text-red-400 dark:text-red-500 mx-auto mb-3" />
+                <p className="font-semibold text-gray-700 dark:text-gray-300">{error}</p>
                 <button onClick={loadSettings}
-                  className="mt-4 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition flex items-center gap-2 mx-auto">
+                  className="mt-4 px-6 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl text-sm font-semibold hover:bg-green-700 dark:hover:bg-green-600 transition flex items-center gap-2 mx-auto">
                   <RefreshCw size={14} /> Retry
                 </button>
               </div>

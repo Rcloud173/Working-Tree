@@ -240,6 +240,28 @@ class AuthService {
       throw new ApiError(401, 'Invalid credentials');
     }
 
+    if (user.twoFactorEnabled) {
+      if (!user.email) {
+        throw new ApiError(400, 'Two-factor authentication requires a verified email. Please add an email to your account.');
+      }
+      const result = await otpService.send2FAOTPForUser(
+        user._id,
+        '2fa_login',
+        user.name,
+        user.email
+      );
+      if (!result.success && !result.skipped) {
+        throw new ApiError(500, result.message || 'Failed to send verification code');
+      }
+      if (result.skipped) {
+        throw new ApiError(429, result.message || 'Please wait before requesting another code');
+      }
+      return {
+        requires2FA: true,
+        userId: user._id.toString(),
+      };
+    }
+
     const tokens = this.generateTokens(user._id);
     await this.saveRefreshToken(user._id, tokens.refreshToken);
 
@@ -253,6 +275,112 @@ class AuthService {
       user: userObj,
       tokens,
     };
+  }
+
+  async verifyPassword(userId, password) {
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    const valid = await user.comparePassword(password);
+    if (!valid) {
+      throw new ApiError(401, 'Invalid password');
+    }
+    return { verified: true };
+  }
+
+  async send2FAOtp(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (user.twoFactorEnabled) {
+      throw new ApiError(400, 'Two-factor authentication is already enabled');
+    }
+    if (!user.email) {
+      throw new ApiError(400, 'Add an email to your account to use two-factor authentication');
+    }
+    const result = await otpService.send2FAOTPForUser(
+      user._id,
+      '2fa_enable',
+      user.name,
+      user.email
+    );
+    if (!result.success && !result.skipped) {
+      throw new ApiError(500, result.message || 'Failed to send OTP');
+    }
+    if (result.skipped) {
+      throw new ApiError(429, result.message || 'Please wait before resending');
+    }
+    return {
+      otpSent: true,
+      message: 'OTP sent to your registered email',
+      expiresIn: result.expiresIn,
+    };
+  }
+
+  async enable2FA(userId, otp) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (user.twoFactorEnabled) {
+      throw new ApiError(400, 'Two-factor authentication is already enabled');
+    }
+    const verifyResult = await otpService.verifyOTPByUserAndType(userId, otp, '2fa_enable');
+    if (!verifyResult.success) {
+      throw new ApiError(400, verifyResult.message);
+    }
+    user.twoFactorEnabled = true;
+    await user.save({ validateBeforeSave: false });
+    return { twoFactorEnabled: true };
+  }
+
+  async verifyLoginOTP(userId, otp) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(401, 'Invalid request');
+    }
+    if (!user.twoFactorEnabled) {
+      throw new ApiError(400, 'Two-factor authentication is not enabled for this account');
+    }
+    const verifyResult = await otpService.verifyOTPByUserAndType(userId, otp, '2fa_login');
+    if (!verifyResult.success) {
+      throw new ApiError(400, verifyResult.message);
+    }
+    const tokens = this.generateTokens(user._id);
+    await this.saveRefreshToken(user._id, tokens.refreshToken);
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+    const userObj = user.toObject();
+    delete userObj.password;
+    return { user: userObj, tokens };
+  }
+
+  async resendLoginOTP(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(401, 'Invalid request');
+    }
+    if (!user.twoFactorEnabled) {
+      throw new ApiError(400, 'Two-factor authentication is not enabled');
+    }
+    if (!user.email) {
+      throw new ApiError(400, 'No email on account');
+    }
+    const result = await otpService.send2FAOTPForUser(
+      user._id,
+      '2fa_login',
+      user.name,
+      user.email
+    );
+    if (!result.success && !result.skipped) {
+      throw new ApiError(500, result.message || 'Failed to resend code');
+    }
+    if (result.skipped) {
+      throw new ApiError(429, result.message || 'Please wait before resending');
+    }
+    return { otpSent: true, expiresIn: result.expiresIn };
   }
 
   generateTokens(userId) {

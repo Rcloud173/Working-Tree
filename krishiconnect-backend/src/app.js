@@ -19,6 +19,7 @@ const notificationRoutes = require('./modules/notification/notification.routes')
 const marketRoutes = require('./modules/market/market.routes');
 const weatherRoutes = require('./modules/weather/weather.routes');
 const translateRoutes = require('./modules/translate/translate.routes');
+const settingsRoutes = require('./modules/settings/settings.routes');
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/market', marketRoutes);
 app.use('/api/v1/weather', weatherRoutes);
 app.use('/api/v1/translate', translateRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

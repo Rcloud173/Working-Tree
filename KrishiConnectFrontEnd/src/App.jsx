@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { authStore } from './store/authStore'
 import { useThemeStore } from './store/themeStore'
 import { getLanguageToUse } from './i18n'
@@ -14,12 +15,19 @@ import OpportunitiesPage from './pages/OpportunitiesPage'
 import ProfilePage from './pages/ProfilePage'
 import NetworkPage from './pages/NetworkPage'
 import SettingsPage from './pages/SettingsPage'
+import PrivacySecurityPage from './pages/PrivacySecurityPage'
 import WeatherPage from './pages/WeatherPage'
 import MarketPage from './pages/MarketPage'
 import CropDoctor from './pages/CropDoctor'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, refetchOnWindowFocus: false },
+  },
+})
 
 function App() {
   useEffect(() => {
@@ -41,9 +49,10 @@ function App() {
 
   return (
     <Router>
-      <SocketProvider>
-        <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-        <Routes>
+      <QueryClientProvider client={queryClient}>
+        <SocketProvider>
+          <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+          <Routes>
         {/* Auth routes: no sidebar layout */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -62,14 +71,16 @@ function App() {
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/network" element={<NetworkPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/privacy" element={<PrivacySecurityPage />} />
           <Route path="/weather" element={<WeatherPage />} />
           <Route path="/market" element={<MarketPage />} />
           <Route path="/crop-doctor" element={<CropDoctor />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </SocketProvider>
+          </Routes>
+        </SocketProvider>
+      </QueryClientProvider>
     </Router>
   )
 }

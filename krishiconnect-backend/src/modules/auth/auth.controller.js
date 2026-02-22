@@ -60,6 +60,33 @@ const resendOTP = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
+const verifyPassword = asyncHandler(async (req, res) => {
+  await authService.verifyPassword(req.user._id, req.body.password);
+  res.status(200).json(new ApiResponse(200, { verified: true }, 'Password verified'));
+});
+
+const send2FAOtp = asyncHandler(async (req, res) => {
+  const result = await authService.send2FAOtp(req.user._id);
+  res.status(200).json(new ApiResponse(200, result, result.message));
+});
+
+const enable2FA = asyncHandler(async (req, res) => {
+  const result = await authService.enable2FA(req.user._id, req.body.otp);
+  res.status(200).json(new ApiResponse(200, result, 'Two-factor authentication enabled'));
+});
+
+const verifyLoginOTP = asyncHandler(async (req, res) => {
+  const { userId, otp } = req.body;
+  const result = await authService.verifyLoginOTP(userId, otp);
+  res.status(200).json(new ApiResponse(200, result, 'Login successful'));
+});
+
+const resendLoginOTP = asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+  const result = await authService.resendLoginOTP(userId);
+  res.status(200).json(new ApiResponse(200, result, 'Code resent'));
+});
+
 module.exports = {
   register,
   verifyOTP,
@@ -70,4 +97,9 @@ module.exports = {
   forgotPassword,
   resetPasswordWithOTP,
   resendOTP,
+  verifyPassword,
+  send2FAOtp,
+  enable2FA,
+  verifyLoginOTP,
+  resendLoginOTP,
 };
