@@ -1,10 +1,14 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 const ApiError = require('../../utils/ApiError');
 const { getRedis } = require('../../config/redis');
 const logger = require('../../config/logger');
 
 const DAILY_LIMIT = 10;
 const USAGE_TTL_SECONDS = 86400; // 24 hours
+
+// Default: fast + free-tier friendly. Switch to llama3-70b-8192 or mixtral-8x7b-32768 for better quality.
+const DEFAULT_MODEL = process.env.GROQ_AI_MODEL || 'llama3-8b-8192';
+const ALLOWED_MODELS = ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'];
 
 const AGRICULTURE_KEYWORDS = [
   'crop', 'crops', 'soil', 'fertilizer', 'fertilizers', 'pest', 'pests',
@@ -13,14 +17,17 @@ const AGRICULTURE_KEYWORDS = [
   'government scheme', 'scheme', 'sowing', 'harvest', 'harvesting',
   'pesticide', 'weed', 'seeds', 'cattle', 'poultry', 'organic', 'krishi',
   'kharif', 'rabi', 'zyad', 'बीज', 'खत', 'पीक', 'शेती', 'पिक',
+  'pm-kisan', 'pm kisan', 'mandi price', 'disease', 'crop disease',
 ];
 
-const SYSTEM_PROMPT = `You are an agricultural expert assistant for Indian farmers.
-You must ONLY answer agriculture-related questions.
-If the question is not related to farming, respond: "I can only help with agriculture-related questions."
-Never provide dangerous chemical dosage.
-Always recommend consulting local agricultural authorities before applying pesticides or chemicals.
-Respond in plain text only.`;
+const KRISHI_SYSTEM_PROMPT = `You are the KrishiConnect AI Assistant — an agricultural expert for Indian farmers.
+
+Your role:
+- Help with crop diseases, weather advisories, government schemes (e.g. PM-Kisan), mandi prices, soil health, fertilizer recommendations, and irrigation tips.
+- Use simple, clear language. If the user writes in Hinglish (Hindi + English), you may respond in Hinglish when helpful.
+- Answer ONLY agriculture-related questions. If the question is not related to farming, say: "I can only help with agriculture-related questions (crops, soil, weather, schemes, mandi, etc.)."
+- Never give exact chemical dosages that could be dangerous. Always recommend consulting local agricultural authorities or Krishi Vigyan Kendra before applying pesticides or chemicals.
+- Respond in plain text only. Be concise and practical.`;
 
 const inMemoryUsage = new Map();
 
@@ -68,71 +75,115 @@ function sanitizeQuestion(input) {
   return input.trim().slice(0, 1000);
 }
 
-const GEMINI_MODEL = 'gemini-pro';
-
-async function askGemini(question) {
-  const apiKey = process.env.GEMINI_API_KEY;
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
-    logger.warn('AI: GEMINI_API_KEY is not set or empty');
+    logger.warn('AI: GROQ_API_KEY is not set or empty');
     throw new ApiError(503, 'AI service is not configured.');
   }
-
-  const prompt = typeof question === 'string' ? question : String(question);
-  if (!prompt.trim()) {
-    throw new ApiError(400, 'Question is required.');
-  }
-  const fullPrompt = `${SYSTEM_PROMPT}\n\nUser question:\n${prompt}`;
-
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey.trim());
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(fullPrompt);
-    const response = result.response;
-    if (!response) {
-      throw new ApiError(502, 'AI response unavailable.');
-    }
-    let text;
-    try {
-      text = typeof response.text === 'function' ? response.text() : '';
-    } catch (innerErr) {
-      logger.error('AI: failed to read response text', { stack: innerErr?.stack });
-      throw new ApiError(502, 'AI response unavailable.');
-    }
-    if (!text || !String(text).trim()) {
-      throw new ApiError(502, 'AI response unavailable.');
-    }
-    return String(text).trim();
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    logger.error('Gemini API error', {
-      message: err.message,
-      stack: err.stack,
-      status: err.status,
-      statusText: err.statusText,
-    });
-    if (err.status === 429) {
-      throw new ApiError(429, 'AI rate limit exceeded. Please try again later.');
-    }
-    throw new ApiError(502, 'AI service is temporarily unavailable. Please try again later.');
-  }
+  return new Groq({ apiKey: apiKey.trim() });
 }
 
-async function ask(userId, rawQuestion) {
+function resolveModel(modelFromRequest) {
+  const name = (modelFromRequest || DEFAULT_MODEL).trim();
+  if (ALLOWED_MODELS.includes(name)) return name;
+  return DEFAULT_MODEL;
+}
+
+function mapGroqError(err) {
+  if (err instanceof ApiError) throw err;
+  const status = err.status ?? err.statusCode;
+  const message = err.message || 'AI request failed';
+  logger.error('Groq API error', { message: err.message, status, stack: err.stack });
+  if (status === 401) throw new ApiError(503, 'AI service configuration error. Invalid API key.');
+  if (status === 429) throw new ApiError(429, 'AI rate limit exceeded. Please try again later.');
+  if (status === 408 || message.toLowerCase().includes('timeout')) {
+    throw new ApiError(504, 'AI request timed out. Please try again.');
+  }
+  throw new ApiError(502, 'AI service is temporarily unavailable. Please try again later.');
+}
+
+/**
+ * Non-streaming: single completion.
+ */
+async function ask(userId, rawQuestion, modelName = null) {
   const question = sanitizeQuestion(rawQuestion);
   if (!question || question.length < 10) {
     throw new ApiError(400, 'Validation failed');
   }
-
   if (!hasAgricultureContext(question)) {
     throw new ApiError(400, 'I can only help with agriculture-related questions.');
   }
 
   await checkAndIncrementUsage(userId);
 
-  const answer = await askGemini(question);
-  return { answer };
+  const client = getGroqClient();
+  const model = resolveModel(modelName);
+
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: KRISHI_SYSTEM_PROMPT },
+        { role: 'user', content: question },
+      ],
+      max_tokens: 1024,
+      temperature: 0.5,
+    });
+
+    const text = completion?.choices?.[0]?.message?.content;
+    if (!text || !String(text).trim()) {
+      throw new ApiError(502, 'AI response unavailable.');
+    }
+    return { answer: String(text).trim() };
+  } catch (err) {
+    mapGroqError(err);
+  }
+}
+
+/**
+ * Streaming: yields chunks to the provided writeChunk callback (e.g. SSE).
+ * Still checks usage and agriculture context; throws on validation/usage errors.
+ */
+async function askStream(userId, rawQuestion, writeChunk, modelName = null) {
+  const question = sanitizeQuestion(rawQuestion);
+  if (!question || question.length < 10) {
+    throw new ApiError(400, 'Validation failed');
+  }
+  if (!hasAgricultureContext(question)) {
+    throw new ApiError(400, 'I can only help with agriculture-related questions.');
+  }
+
+  await checkAndIncrementUsage(userId);
+
+  const client = getGroqClient();
+  const model = resolveModel(modelName);
+
+  try {
+    const stream = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: KRISHI_SYSTEM_PROMPT },
+        { role: 'user', content: question },
+      ],
+      max_tokens: 1024,
+      temperature: 0.5,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const delta = chunk?.choices?.[0]?.delta?.content;
+      if (delta && typeof delta === 'string') {
+        writeChunk(delta);
+      }
+    }
+  } catch (err) {
+    mapGroqError(err);
+  }
 }
 
 module.exports = {
   ask,
+  askStream,
+  KRISHI_SYSTEM_PROMPT,
 };

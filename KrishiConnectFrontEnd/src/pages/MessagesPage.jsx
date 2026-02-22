@@ -11,6 +11,8 @@ import { useSocket } from '../context/SocketContext';
 import { ConversationList, MessageBubble as MessageBubbleComponent, MessageInput } from '../components/chat';
 
 const EMOJI_LIST = ['😀','😊','😂','❤️','👍','🙏','🌾','👋','😅','🔥','✅','💬','🎉','🙂','😎','🤝','💪','🌱','🍅','🥕'];
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop';
+const getAvatarSrc = (user) => (user?.profilePhoto?.url ?? user?.avatar?.url ?? user?.avatar ?? user?.profilePhoto ?? DEFAULT_AVATAR);
 
 const CHAT_FILE_MAX_BYTES = 100 * 1024 * 1024; // 100MB
 
@@ -40,7 +42,7 @@ function mapConversation(conv, currentUserId, onlineUserIds = new Set()) {
     participant: {
       _id: participantId,
       name: user?.name ?? 'User',
-      avatar: user?.avatar ?? user?.profilePhoto,
+      avatar: getAvatarSrc(user),
       specialty: user?.headline ?? '',
       online: onlineUserIds.has(String(participantId)),
     },
@@ -611,8 +613,11 @@ const MessagesPage = () => {
                     className="flex items-center gap-3 flex-1 min-w-0 text-left"
                   >
                     <div className="relative flex-shrink-0">
-                      <img src={activeConvo.participant.avatar} alt={activeConvo.participant.name}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-green-100 dark:border-green-800" />
+                      <img
+                        src={activeConvo.participant?.avatar ?? DEFAULT_AVATAR}
+                        alt={activeConvo.participant?.name ?? 'User'}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-green-100 dark:border-green-800"
+                      />
                       {activeConvo.participant.online && (
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
                       )}

@@ -1,24 +1,77 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Loader } from 'lucide-react';
-import { api } from '../services/api';
 
 // ============================================================================
-// AI CHAT PANEL – Expandable below AI card; calls backend POST /api/v1/ai/ask
+// AI CHAT PANEL – KrishiConnect Assistant (Groq); streaming via POST /api/v1/ai/ask/stream
 // ============================================================================
 
 const MIN_QUESTION_LENGTH = 10;
 const MAX_QUESTION_LENGTH = 1000;
 
+function getStoredToken() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem('accessToken');
+    if (!raw) return null;
+    if (raw.startsWith('"') && raw.endsWith('"')) return JSON.parse(raw);
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+function getApiBase() {
+  const base = import.meta.env.VITE_API_URL || '/api/v1';
+  return base.replace(/\/$/, '');
+}
+
 /**
- * Call backend AI endpoint. Requires auth; question 10–1000 chars, agriculture-related.
- * @param {string} question - User question
- * @returns {Promise<string>} - AI reply text
+ * Stream AI reply from backend (SSE). Calls onChunk(text) for each delta; onError(status, message) on non-2xx or error event.
  */
-async function askAI(question) {
-  const { data } = await api.post('ai/ask', { question: question.trim() });
-  const answer = data?.data?.answer;
-  if (typeof answer !== 'string') return 'No response from assistant.';
-  return answer;
+async function askAIStream(question, onChunk, onError) {
+  const token = getStoredToken();
+  const url = `${getApiBase()}/ai/ask/stream`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: JSON.stringify({ question: question.trim() }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    onError(res.status, data?.message || 'Request failed');
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (raw === '[DONE]') continue;
+      try {
+        const obj = JSON.parse(raw);
+        if (obj.error && obj.message) {
+          onError(obj.status || 500, obj.message);
+          return;
+        }
+        if (obj.content) onChunk(obj.content);
+      } catch (_) {
+        // skip malformed or partial JSON
+      }
+    }
+  }
 }
 
 const AIChatPanel = ({ onClose, className = '' }) => {
@@ -63,13 +116,39 @@ const AIChatPanel = ({ onClose, className = '' }) => {
     }
 
     const userMessage = { role: 'user', content: text };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
     setInputValue('');
     setLoading(true);
 
     try {
-      const reply = await askAI(text);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      await askAIStream(
+        text,
+        (chunk) => {
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            if (last?.role === 'assistant') {
+              next[next.length - 1] = { ...last, content: last.content + chunk };
+            }
+            return next;
+          });
+        },
+        (status, message) => {
+          let content = message || 'Sorry, something went wrong. Please try again.';
+          if (status === 401) content = 'Please log in to use the assistant.';
+          if (status === 429) content = message || 'Too many requests. Please wait a few minutes and try again.';
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            if (last?.role === 'assistant' && last.content === '') {
+              next[next.length - 1] = { role: 'assistant', content };
+            } else {
+              next.push({ role: 'assistant', content });
+            }
+            return next;
+          });
+        }
+      );
     } catch (err) {
       const status = err.response?.status;
       const msg = err.response?.data?.message;
@@ -77,8 +156,17 @@ const AIChatPanel = ({ onClose, className = '' }) => {
       if (status === 400 && msg) content = msg;
       else if (status === 401) content = 'Please log in to use the assistant.';
       else if (status === 429) content = msg || 'Too many requests. Please wait a few minutes and try again.';
-      else if ((status === 502 || status === 503) && msg) content = msg;
-      setMessages((prev) => [...prev, { role: 'assistant', content }]);
+      else if ((status === 502 || status === 503 || status === 504) && msg) content = msg;
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (last?.role === 'assistant' && last.content === '') {
+          next[next.length - 1] = { role: 'assistant', content };
+        } else {
+          next.push({ role: 'assistant', content });
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -127,11 +215,11 @@ const AIChatPanel = ({ onClose, className = '' }) => {
                   : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-600'
               }`}
             >
-              {msg.content}
+              {msg.content || (msg.role === 'assistant' && loading ? '\u200b' : null)}
             </div>
           </div>
         ))}
-        {loading && (
+        {loading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content && (
           <div className="flex justify-start">
             <div className="rounded-2xl px-3 py-2 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <Loader size={14} className="animate-spin" />

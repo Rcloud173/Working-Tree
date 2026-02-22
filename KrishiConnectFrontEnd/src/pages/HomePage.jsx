@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,6 +13,7 @@ import { userService } from '../services/user.service';
 import { authStore } from '../store/authStore';
 import AIChatPanel from '../components/AIChatPanel';
 import { useTranslatePost } from '../hooks/useTranslatePost';
+import { useWeather, INDIAN_CITIES } from '../hooks/useWeather';
 
 // ============================================================================
 // API: postService + userService; demo fallback for weather/market/news
@@ -38,7 +39,6 @@ const api = {
   followUser: (userId) => userService.followUser(userId),
   unfollowUser: (userId) => userService.unfollowUser(userId),
   updateProfile: async (userId, data) => ({ user: await userService.updateProfile(data) }),
-  fetchWeather: async (city) => { await delay(700); return DEMO_WEATHER; },
   fetchMarketPrices: async () => { await delay(600); return { prices: DEMO_MARKET_PRICES }; },
   fetchNews: async () => { await delay(500); return { news: DEMO_NEWS }; },
 };
@@ -104,7 +104,6 @@ const DEMO_COMMENTS = [
   { _id: 'c2', author: { _id: 'u6', name: 'Sunita Devi', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&h=60&fit=crop' }, content: 'Congratulations! 🎉 Which variety of tomato gives best yield?', createdAt: new Date(Date.now() - 15 * 60e3).toISOString() },
 ];
 
-const DEMO_WEATHER = { city: 'Bijnor, UP', temp: 28, condition: 'Partly Cloudy', humidity: 65, wind: 12, icon: '⛅', tip: 'Good day for irrigation ✅' };
 const DEMO_MARKET_PRICES = [
   { crop: 'Wheat', price: 2150, unit: '₹/quintal', change: 2.3, trend: 'up' },
   { crop: 'Rice', price: 3420, unit: '₹/quintal', change: -1.2, trend: 'down' },
@@ -1334,12 +1333,15 @@ const CompactProfileCard = ({ user, onEditProfile }) => {
 // ============================================================================
 // POST COMPOSER BAR
 // ============================================================================
-const PostComposerBar = ({ user, onOpenModal }) => (
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop';
+const PostComposerBar = ({ user, onOpenModal }) => {
+  const avatarSrc = user?.profilePhoto?.url ?? user?.avatar?.url ?? user?.avatar ?? DEFAULT_AVATAR;
+  return (
   <div className="card p-4 mb-3 transition-colors duration-200">
     <div className="flex gap-3 mb-3">
       <img
-        src={user?.avatar}
-        alt={user?.name}
+        src={avatarSrc}
+        alt={user?.name ?? 'User'}
         className="w-10 h-10 rounded-full object-cover border-2 border-green-200 dark:border-green-800 flex-shrink-0"
       />
       <button
@@ -1365,14 +1367,29 @@ const PostComposerBar = ({ user, onOpenModal }) => (
       ))}
     </div>
   </div>
-);
+  );
+};
 
 // ============================================================================
 // RIGHT SIDEBAR
 // ============================================================================
+const WEATHER_EMOJI = { 0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️', 51: '🌦️', 53: '🌦️', 61: '🌧️', 63: '🌧️', 65: '🌧️', 71: '🌨️', 73: '🌨️', 75: '🌨️', 80: '🌦️', 81: '🌧️', 82: '🌧️', 95: '⛈️', 96: '⛈️', 99: '⛈️' };
+function getWeatherTip(cw) {
+  if (!cw) return 'Tap for full forecast';
+  const code = cw.weatherCode;
+  const temp = cw.temperature != null ? Number(cw.temperature) : null;
+  if ([61, 63, 65, 80, 81, 82, 51, 53].includes(code)) return 'Rain expected. Avoid spraying pesticides today.';
+  if ([95, 96, 99].includes(code)) return 'Thunderstorm possible. Secure sheds & stay safe.';
+  if (temp != null && temp > 38) return 'Hot day. Water crops early morning. Stay hydrated.';
+  if (temp != null && temp < 10) return 'Cold. Protect sensitive crops from frost.';
+  if ([0, 1].includes(code) && temp != null && temp >= 18 && temp <= 35) return 'Good day for irrigation ✅';
+  return 'Tap for full forecast & 7-day outlook';
+}
+
 const RightSidebar = () => {
   const navigate = useNavigate();
-  const [weather, setWeather] = useState(null);
+  const [coords, setCoords] = useState(() => INDIAN_CITIES[0]);
+  const { currentWeather, location, isLoading: weatherLoading } = useWeather(coords);
   const [prices, setPrices] = useState([]);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1380,15 +1397,42 @@ const RightSidebar = () => {
   const [pricesRefreshing, setPricesRefreshing] = useState(false);
 
   useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => {},
+        { timeout: 5000, maximumAge: 300000 }
+      );
+    }
+  }, []);
+
+  useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [w, p, n] = await Promise.all([api.fetchWeather('Bijnor'), api.fetchMarketPrices(), api.fetchNews()]);
-        setWeather(w); setPrices(p.prices); setNews(n.news);
+        const [p, n] = await Promise.all([api.fetchMarketPrices(), api.fetchNews()]);
+        setPrices(p.prices); setNews(n.news);
       } catch { } finally { setLoading(false); }
     };
     load();
   }, []);
+
+  const weatherCard = useMemo(() => {
+    if (!currentWeather) return null;
+    const temp = currentWeather.temperature != null ? Math.round(Number(currentWeather.temperature)) : null;
+    const humidity = currentWeather.humidity != null ? Math.round(Number(currentWeather.humidity)) : null;
+    const wind = currentWeather.windSpeed != null ? Math.round(Number(currentWeather.windSpeed)) : null;
+    const city = location ? [location.city, location.area].filter(Boolean).join(', ') || '—' : '—';
+    return {
+      icon: WEATHER_EMOJI[currentWeather.weatherCode] ?? '⛅',
+      temp: temp ?? '—',
+      condition: currentWeather.condition || '—',
+      city,
+      humidity: humidity ?? '—',
+      wind: wind ?? '—',
+      tip: getWeatherTip(currentWeather),
+    };
+  }, [currentWeather, location]);
 
   const refreshPrices = async () => {
     setPricesRefreshing(true);
@@ -1425,18 +1469,18 @@ const RightSidebar = () => {
           </span>
         </div>
 
-        {loading ? <CardSkeleton /> : weather ? (
+        {weatherLoading ? <CardSkeleton /> : weatherCard ? (
           <>
             {/* Main temp block */}
             <div className="flex items-center gap-3.5 bg-white dark:bg-gray-700/50 rounded-xl p-3.5 mb-2.5 shadow-sm">
-              <span className="text-4xl leading-none">{weather.icon}</span>
+              <span className="text-4xl leading-none">{weatherCard.icon}</span>
               <div>
                 <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 leading-none tracking-tight">
-                  {weather.temp}°<span className="text-base font-medium text-gray-500 dark:text-gray-400">C</span>
+                  {weatherCard.temp}°<span className="text-base font-medium text-gray-500 dark:text-gray-400">C</span>
                 </p>
-                <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-1 font-medium">{weather.condition}</p>
+                <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-1 font-medium">{weatherCard.condition}</p>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
-                  <MapPin size={10} /> {weather.city}
+                  <MapPin size={10} /> {weatherCard.city}
                 </p>
               </div>
             </div>
@@ -1444,8 +1488,8 @@ const RightSidebar = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-2 mb-2.5">
               {[
-                { icon: Droplet, label: 'Humidity', value: `${weather.humidity}%`, iconBg: 'bg-blue-100 dark:bg-blue-900/40', iconColor: 'text-blue-600 dark:text-blue-400' },
-                { icon: Wind, label: 'Wind', value: `${weather.wind} km/h`, iconBg: 'bg-orange-100 dark:bg-orange-900/40', iconColor: 'text-orange-600 dark:text-orange-400' },
+                { icon: Droplet, label: 'Humidity', value: `${weatherCard.humidity}%`, iconBg: 'bg-blue-100 dark:bg-blue-900/40', iconColor: 'text-blue-600 dark:text-blue-400' },
+                { icon: Wind, label: 'Wind', value: `${weatherCard.wind} km/h`, iconBg: 'bg-orange-100 dark:bg-orange-900/40', iconColor: 'text-orange-600 dark:text-orange-400' },
               ].map(({ icon: Icon, label, value, iconBg, iconColor }) => (
                 <div key={label} className="flex items-center gap-2 bg-white dark:bg-gray-700/50 py-2.5 px-3 rounded-xl shadow-sm">
                   <div className={`p-1.5 rounded-lg ${iconBg}`}>
@@ -1461,7 +1505,7 @@ const RightSidebar = () => {
 
             {/* Tip */}
             <div className="bg-gradient-to-br from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-xl py-2.5 px-3.5 text-xs font-semibold leading-snug">
-              {weather.tip}
+              {weatherCard.tip}
             </div>
           </>
         ) : null}

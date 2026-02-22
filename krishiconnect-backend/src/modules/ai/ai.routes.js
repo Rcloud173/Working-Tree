@@ -6,5 +6,6 @@ const { askSchema, validate } = require('./ai.validation');
 const aiController = require('./ai.controller');
 
 router.post('/ask', authenticate, aiLimiter, validate(askSchema), aiController.ask);
+router.post('/ask/stream', authenticate, aiLimiter, validate(askSchema), aiController.askStream);
 
 module.exports = router;

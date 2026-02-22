@@ -10,14 +10,55 @@ const ask = asyncHandler(async (req, res) => {
   }
   const userId = (user._id || user.id).toString();
   const question = req.body?.question;
+  const model = req.body?.model || null;
   if (question == null || typeof question !== 'string') {
     throw new ApiError(400, 'Question is required.');
   }
-  const data = await aiService.ask(userId, question);
-  console.log(data);
+  const data = await aiService.ask(userId, question, model);
   res.status(200).json(new ApiResponse(200, data, 'OK'));
+});
+
+/**
+ * Streaming response: SSE. Sets headers and streams chunks as data: { "content": "..." }\n\n
+ */
+const askStream = asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(401, 'Authentication required');
+  }
+  const userId = (user._id || user.id).toString();
+  const question = req.body?.question;
+  const model = req.body?.model || null;
+  if (question == null || typeof question !== 'string') {
+    throw new ApiError(400, 'Question is required.');
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const writeChunk = (text) => {
+    const payload = JSON.stringify({ content: text });
+    res.write(`data: ${payload}\n\n`);
+    res.flush?.();
+  };
+
+  try {
+    await aiService.askStream(userId, question, writeChunk, model);
+    res.write('data: [DONE]\n\n');
+  } catch (err) {
+    const status = err.statusCode || err.status || 500;
+    const message = err.message || 'AI request failed';
+    const payload = JSON.stringify({ error: true, status, message });
+    res.write(`data: ${payload}\n\n`);
+  } finally {
+    res.end();
+  }
 });
 
 module.exports = {
   ask,
+  askStream,
 };
