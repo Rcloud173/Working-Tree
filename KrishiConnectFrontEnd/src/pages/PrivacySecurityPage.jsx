@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Shield, UserX, Loader, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../hooks/usePrivacySecurity';
 import ToggleSetting from '../components/privacy-security/ToggleSetting';
 import BlockedUsersList from '../components/privacy-security/BlockedUsersList';
+import { UnblockConfirmModal } from '../components/BlockModals';
 
 // ---------------------------------------------------------------------------
 // Section card (matches Settings page style)
@@ -129,8 +130,13 @@ export default function PrivacySecurityPage() {
 
   const unblockUser = useUnblockUser({
     onError: () => toast.error('Failed to unblock user'),
-    onSuccess: () => toast.success('User unblocked'),
+    onSuccess: () => {
+      toast.success('User unblocked');
+      setUnblockConfirm(null);
+    },
   });
+
+  const [unblockConfirm, setUnblockConfirm] = useState(null);
 
   const handleRetry = useCallback(() => {
     refetchPrivacy();
@@ -151,12 +157,19 @@ export default function PrivacySecurityPage() {
     [updatePrivacy]
   );
 
-  const handleUnblock = useCallback(
-    (userId) => {
-      unblockUser.mutate(userId);
-    },
-    [unblockUser]
-  );
+  const handleUnblockClick = useCallback((userId) => {
+    const idStr = userId != null ? String(userId) : '';
+    const user = blockedUsers.find((u) => String(u.id ?? u._id) === idStr);
+    setUnblockConfirm({ userId: idStr, username: user?.name ?? 'this user' });
+  }, [blockedUsers]);
+
+  const handleUnblockConfirm = useCallback(() => {
+    if (unblockConfirm?.userId != null) {
+      unblockUser.mutate(String(unblockConfirm.userId));
+    }
+  }, [unblockConfirm, unblockUser]);
+
+  const handleUnblockCancel = useCallback(() => setUnblockConfirm(null), []);
 
   const isLoading = privacyLoading && !privacyData;
   const hasError = privacyError || blockedError;
@@ -200,6 +213,14 @@ export default function PrivacySecurityPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      {unblockConfirm && (
+        <UnblockConfirmModal
+          username={unblockConfirm.username}
+          onConfirm={handleUnblockConfirm}
+          onCancel={handleUnblockCancel}
+          loading={unblockUser.isPending}
+        />
+      )}
       <div className="max-w-2xl mx-auto px-4 py-8">
         <header className="mb-6">
           <h1 className="font-black text-gray-900 dark:text-gray-100 text-xl flex items-center gap-2">
@@ -309,10 +330,10 @@ export default function PrivacySecurityPage() {
             <BlockedUsersList
               users={blockedUsers}
               loading={blockedLoading}
-              onUnblock={handleUnblock}
+              onUnblock={handleUnblockClick}
               unblockingById={
-                unblockUser.isPending && unblockUser.variables
-                  ? { [unblockUser.variables]: true }
+                unblockUser.isPending && unblockUser.variables != null
+                  ? { [String(unblockUser.variables)]: true }
                   : {}
               }
             />

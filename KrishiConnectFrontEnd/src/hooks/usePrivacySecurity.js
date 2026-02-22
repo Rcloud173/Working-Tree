@@ -81,8 +81,9 @@ export function useUnblockUser(options = {}) {
   return useMutation({
     mutationFn: (userId) => privacySecurityApi.unblockUser(userId),
     onSuccess: (_, userId) => {
+      const idStr = userId != null ? String(userId) : '';
       queryClient.setQueryData(privacyKeys.blocked(), (old) =>
-        Array.isArray(old) ? old.filter((u) => u.id !== userId && u._id !== userId) : []
+        Array.isArray(old) ? old.filter((u) => String(u.id ?? u._id) !== idStr) : []
       );
       queryClient.invalidateQueries({ queryKey: privacyKeys.blocked() });
       options.onSuccess?.();

@@ -1,5 +1,6 @@
 const User = require('./user.model');
 const Follow = require('./follow.model');
+const Block = require('./block.model');
 const ApiError = require('../../utils/ApiError');
 const Pagination = require('../../utils/pagination');
 const { deleteFromCloudinary } = require('../../utils/uploadToCloudinary');
@@ -7,12 +8,46 @@ const { deleteFromCloudinary } = require('../../utils/uploadToCloudinary');
 const userPagination = new Pagination(User);
 const followPagination = new Pagination(Follow);
 
-const getProfile = async (userId, viewerId = null) => {
-  // When someone else views this profile, increment profileViewers (then fetch so counts are fresh)
-  if (viewerId && viewerId.toString() !== userId.toString()) {
-    await User.findByIdAndUpdate(userId, { $inc: { 'stats.profileViewers': 1 } });
-  }
+/** Get array of user IDs that blockerId has blocked (for filtering queries). */
+const getBlockedIds = async (blockerId) => {
+  const docs = await Block.find({ blocker: blockerId }).select('blocked').lean();
+  return docs.map((d) => d.blocked);
+};
 
+/** IDs to exclude from viewer's content: users they blocked + users who blocked them. */
+const getBlockExcludeIds = async (viewerId) => {
+  if (!viewerId) return [];
+  const [blockedByViewer, blockViewerDocs] = await Promise.all([
+    getBlockedIds(viewerId),
+    Block.find({ blocked: viewerId }).select('blocker').lean(),
+  ]);
+  const blockViewerIds = blockViewerDocs.map((d) => d.blocker);
+  const set = new Set([
+    ...blockedByViewer.map((id) => id.toString()),
+    ...blockViewerIds.map((id) => id.toString()),
+  ]);
+  return [...set];
+};
+
+/** Get block relationship between viewer and profile user. */
+const getBlockRelationship = async (viewerId, profileUserId) => {
+  if (!viewerId || !profileUserId || viewerId.toString() === profileUserId.toString()) {
+    return { iBlockThem: false, theyBlockMe: false };
+  }
+  const [iBlockThem, theyBlockMe] = await Promise.all([
+    Block.findOne({ blocker: viewerId, blocked: profileUserId }).lean(),
+    Block.findOne({ blocker: profileUserId, blocked: viewerId }).lean(),
+  ]);
+  return { iBlockThem: !!iBlockThem, theyBlockMe: !!theyBlockMe };
+};
+
+/** Check if blocker has blocked blockedId. */
+const isBlocked = async (blockerId, blockedId) => {
+  const doc = await Block.findOne({ blocker: blockerId, blocked: blockedId }).lean();
+  return !!doc;
+};
+
+const getProfile = async (userId, viewerId = null) => {
   const user = await User.findById(userId)
     .select('-password -refreshTokens -fcmTokens')
     .lean();
@@ -21,7 +56,17 @@ const getProfile = async (userId, viewerId = null) => {
     throw new ApiError(404, 'User not found');
   }
 
-  if (viewerId) {
+  if (viewerId && viewerId.toString() !== userId.toString()) {
+    const blockRel = await getBlockRelationship(viewerId, userId);
+    if (blockRel.theyBlockMe) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (blockRel.iBlockThem) {
+      user.isBlockedByMe = true;
+      user.isFollowing = false;
+      return user;
+    }
+    await User.findByIdAndUpdate(userId, { $inc: { 'stats.profileViewers': 1 } });
     const follow = await Follow.findOne({
       follower: viewerId,
       following: userId,
@@ -240,8 +285,17 @@ const updateBackground = async (userId, options = {}) => {
 
 const searchUsers = async (query, options = {}) => {
   const { q, filter = 'all', page = 1, limit = 20 } = query;
+  const { viewerId } = options;
 
   let searchQuery = { isActive: true, isBanned: false };
+
+  if (viewerId) {
+    const blockedByViewer = await getBlockedIds(viewerId);
+    const blockViewer = await Block.find({ blocked: viewerId }).select('blocker').lean();
+    const blockViewerIds = blockViewer.map((d) => d.blocker);
+    const exclude = [...blockedByViewer, ...blockViewerIds, viewerId];
+    searchQuery._id = { $nin: exclude };
+  }
 
   if (q) {
     searchQuery.$or = [
@@ -262,6 +316,55 @@ const searchUsers = async (query, options = {}) => {
   });
 };
 
+const getBlockedUsers = async (blockerId, options = {}) => {
+  const { page = 1, limit = 20 } = options;
+  const BlockPagination = new Pagination(Block);
+  return BlockPagination.paginate(
+    { blocker: blockerId },
+    {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [{ path: 'blocked', select: 'name username avatar profilePhoto createdAt' }],
+    }
+  );
+};
+
+const blockUser = async (blockerId, blockedId) => {
+  if (blockerId.toString() === blockedId.toString()) {
+    throw new ApiError(400, 'Cannot block yourself');
+  }
+  const targetUser = await User.findById(blockedId);
+  if (!targetUser) {
+    throw new ApiError(404, 'User not found');
+  }
+  const existing = await Block.findOne({ blocker: blockerId, blocked: blockedId });
+  if (existing) {
+    return { success: true, alreadyBlocked: true };
+  }
+  await Block.create({ blocker: blockerId, blocked: blockedId });
+  const [followAB, followBA] = await Promise.all([
+    Follow.findOne({ follower: blockerId, following: blockedId }),
+    Follow.findOne({ follower: blockedId, following: blockerId }),
+  ]);
+  if (followAB) {
+    await Follow.findOneAndDelete({ follower: blockerId, following: blockedId });
+    await User.findByIdAndUpdate(blockerId, { $inc: { 'stats.followingCount': -1 } });
+    await User.findByIdAndUpdate(blockedId, { $inc: { 'stats.followersCount': -1 } });
+  }
+  if (followBA) {
+    await Follow.findOneAndDelete({ follower: blockedId, following: blockerId });
+    await User.findByIdAndUpdate(blockedId, { $inc: { 'stats.followingCount': -1 } });
+    await User.findByIdAndUpdate(blockerId, { $inc: { 'stats.followersCount': -1 } });
+  }
+  return { success: true };
+};
+
+const unblockUser = async (blockerId, blockedId) => {
+  await Block.findOneAndDelete({ blocker: blockerId, blocked: blockedId });
+  return { success: true };
+};
+
 const followUser = async (followerId, followingId) => {
   if (followerId.toString() === followingId.toString()) {
     throw new ApiError(400, 'Cannot follow yourself');
@@ -270,6 +373,11 @@ const followUser = async (followerId, followingId) => {
   const targetUser = await User.findById(followingId);
   if (!targetUser) {
     throw new ApiError(404, 'User not found');
+  }
+
+  const blocked = await isBlocked(followerId, followingId) || await isBlocked(followingId, followerId);
+  if (blocked) {
+    throw new ApiError(403, 'Cannot follow this user');
   }
 
   const existingFollow = await Follow.findOne({
@@ -304,31 +412,43 @@ const unfollowUser = async (followerId, followingId) => {
 };
 
 const getFollowers = async (userId, options = {}) => {
-  const { page = 1, limit = 20 } = options;
-
-  return followPagination.paginate(
-    { following: userId },
-    {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: [{ path: 'follower', select: 'name avatar bio isExpert stats' }],
+  const { page = 1, limit = 20, viewerId = null } = options;
+  let query = { following: userId };
+  if (viewerId) {
+    const blockedByViewer = await getBlockedIds(viewerId);
+    const blockViewer = await Block.find({ blocked: viewerId }).select('blocker').lean();
+    const blockViewerIds = blockViewer.map((d) => d.blocker);
+    const exclude = [...blockedByViewer, ...blockViewerIds];
+    if (exclude.length) {
+      query.follower = { $nin: exclude };
     }
-  );
+  }
+  return followPagination.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: [{ path: 'follower', select: 'name avatar bio isExpert stats profilePhoto' }],
+  });
 };
 
 const getFollowing = async (userId, options = {}) => {
-  const { page = 1, limit = 20 } = options;
-
-  return followPagination.paginate(
-    { follower: userId },
-    {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: [{ path: 'following', select: 'name avatar bio isExpert stats' }],
+  const { page = 1, limit = 20, viewerId = null } = options;
+  let query = { follower: userId };
+  if (viewerId) {
+    const blockedByViewer = await getBlockedIds(viewerId);
+    const blockViewer = await Block.find({ blocked: viewerId }).select('blocker').lean();
+    const blockViewerIds = blockViewer.map((d) => d.blocker);
+    const exclude = [...blockedByViewer, ...blockViewerIds];
+    if (exclude.length) {
+      query.following = { $nin: exclude };
     }
-  );
+  }
+  return followPagination.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: [{ path: 'following', select: 'name avatar bio isExpert stats profilePhoto' }],
+  });
 };
 
 module.exports = {
@@ -349,4 +469,11 @@ module.exports = {
   unfollowUser,
   getFollowers,
   getFollowing,
+  getBlockedIds,
+  getBlockExcludeIds,
+  getBlockRelationship,
+  isBlocked,
+  getBlockedUsers,
+  blockUser,
+  unblockUser,
 };

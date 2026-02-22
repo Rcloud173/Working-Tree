@@ -6,8 +6,12 @@ import {
   MapPin, LinkIcon, Award, Briefcase, Users, Heart, MessageSquare,
   Share2, Bookmark, Edit3, Camera, Check, X, Loader, AlertCircle,
   RefreshCw, Eye, TrendingUp, Plus, ChevronDown, ChevronUp,
-  CheckCircle, Star, Calendar, BookOpen, Phone, Image as ImageIcon
+  CheckCircle, Star, Calendar, BookOpen, Phone, Image as ImageIcon,
+  MoreVertical
 } from 'lucide-react';
+import { BlockConfirmModal, UnblockConfirmModal } from '../components/BlockModals';
+import { useQueryClient } from '@tanstack/react-query';
+import { privacyKeys } from '../hooks/usePrivacySecurity';
 import { useAuthStore } from '../store/authStore';
 import { authStore } from '../store/authStore';
 import { userService, mapUserToProfile } from '../services/user.service';
@@ -268,8 +272,19 @@ const ProfilePage = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [shareToast, setShareToast] = useState(false);
   const [showMoreInfo, setShowMoreInfo] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showUnblockModal, setShowUnblockModal] = useState(false);
+  const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [listModal, setListModal] = useState(null);
+  const [listLoading, setListLoading] = useState(false);
+  const [listUsers, setListUsers] = useState([]);
+  const [listMenuUserId, setListMenuUserId] = useState(null);
+  const [blockTargetFromList, setBlockTargetFromList] = useState(null);
+  const listMenuRef = useRef(null);
   const profilePhotoInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  const queryClient = useQueryClient();
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -292,10 +307,13 @@ const ProfilePage = () => {
       }
     } catch (err) {
       const isUnauthorized = err?.response?.status === 401;
+      const isNotFound = err?.response?.status === 404;
       if (isUnauthorized && isOwnProfile) {
         setError(currentUserId
           ? 'Session expired. Please log in again.'
           : 'Please log in to view your profile.');
+      } else if (isNotFound && !isOwnProfile) {
+        setError('User not found');
       } else {
         setError(err?.message || 'Failed to load profile.');
       }
@@ -386,6 +404,96 @@ const ProfilePage = () => {
     setTimeout(() => setShareToast(false), 2500);
   };
 
+  const handleBlock = async () => {
+    if (!user || !currentUserId) return;
+    setBlockUnblockLoading(true);
+    try {
+      await userService.blockUser(user._id);
+      setShowBlockModal(false);
+      setProfileMenuOpen(false);
+      setUser((prev) => (prev ? { ...prev, isBlockedByMe: true, isFollowing: false } : prev));
+      setFollowing(false);
+      queryClient.invalidateQueries({ queryKey: privacyKeys.blocked() });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'recent'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'trending'] });
+      toast.success('User blocked');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to block');
+    } finally {
+      setBlockUnblockLoading(false);
+    }
+  };
+
+  const handleUnblock = async () => {
+    if (!user || !currentUserId) return;
+    setBlockUnblockLoading(true);
+    try {
+      await userService.unblockUser(user._id);
+      setShowUnblockModal(false);
+      setUser((prev) => (prev ? { ...prev, isBlockedByMe: false } : prev));
+      queryClient.invalidateQueries({ queryKey: privacyKeys.blocked() });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'recent'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'trending'] });
+      toast.success('User unblocked');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to unblock');
+    } finally {
+      setBlockUnblockLoading(false);
+    }
+  };
+
+  const openListModal = useCallback(async (type) => {
+    if (!user?._id) return;
+    setListModal(type);
+    setListLoading(true);
+    setListUsers([]);
+    try {
+      const res = type === 'followers'
+        ? await userService.getFollowers(user._id, 1, 50)
+        : await userService.getFollowing(user._id, 1, 50);
+      const raw = res?.data ?? [];
+      const normalized = (type === 'followers'
+        ? raw.map((d) => d.follower || d).filter(Boolean)
+        : raw.map((d) => d.following || d).filter(Boolean)
+      ).map((u) => ({
+        _id: u._id ?? u.id,
+        name: u.name ?? 'User',
+        avatar: u.profilePhoto?.url ?? u.avatar?.url ?? u.avatar ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop',
+      }));
+      setListUsers(normalized);
+    } catch {
+      toast.error('Failed to load list');
+      setListModal(null);
+    } finally {
+      setListLoading(false);
+    }
+  }, [user?._id]);
+
+  const handleBlockFromList = async () => {
+    if (!blockTargetFromList?.userId) return;
+    setBlockUnblockLoading(true);
+    try {
+      await userService.blockUser(blockTargetFromList.userId);
+      setBlockTargetFromList(null);
+      setListUsers((prev) => prev.filter((u) => String(u._id) !== String(blockTargetFromList.userId)));
+      setListMenuUserId(null);
+      queryClient.invalidateQueries({ queryKey: privacyKeys.blocked() });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'recent'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'trending'] });
+      toast.success('User blocked');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to block');
+    } finally {
+      setBlockUnblockLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const close = (e) => { if (listMenuRef.current && !listMenuRef.current.contains(e.target)) setListMenuUserId(null); };
+    if (listMenuUserId) document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [listMenuUserId]);
+
   const handleProfilePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -470,6 +578,79 @@ const ProfilePage = () => {
       {showEditModal && (
         <EditProfileModal user={user} currentUserId={currentUserId} onClose={() => setShowEditModal(false)} onSaved={(updated) => { setUser(updated); }} />
       )}
+      {showBlockModal && (
+        <BlockConfirmModal
+          username={user?.name || user?.username}
+          onConfirm={handleBlock}
+          onCancel={() => setShowBlockModal(false)}
+          loading={blockUnblockLoading}
+        />
+      )}
+      {showUnblockModal && (
+        <UnblockConfirmModal
+          username={user?.name || user?.username}
+          onConfirm={handleUnblock}
+          onCancel={() => setShowUnblockModal(false)}
+          loading={blockUnblockLoading}
+        />
+      )}
+      {blockTargetFromList && (
+        <BlockConfirmModal
+          username={blockTargetFromList.name}
+          onConfirm={handleBlockFromList}
+          onCancel={() => setBlockTargetFromList(null)}
+          loading={blockUnblockLoading}
+        />
+      )}
+      {listModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4" role="dialog" aria-modal="true" aria-labelledby="list-modal-title">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+              <h2 id="list-modal-title" className="font-bold text-gray-900 dark:text-gray-100">
+                {listModal === 'followers' ? t('profile.followers') : t('profile.following')}
+              </h2>
+              <button type="button" onClick={() => { setListModal(null); setListUsers([]); setListMenuUserId(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500" aria-label="Close">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 min-h-0 p-2">
+              {listLoading ? (
+                <div className="flex justify-center py-8"><Loader size={24} className="animate-spin text-green-600" /></div>
+              ) : listUsers.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No one yet</p>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {listUsers.map((u) => (
+                    <div key={u._id} className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl">
+                      <img src={u.avatar} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0 cursor-pointer border border-gray-100 dark:border-gray-600" onClick={() => { setListModal(null); navigate(`/profile/${u._id}`); }} />
+                      <button type="button" className="flex-1 text-left min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100 text-sm" onClick={() => { setListModal(null); navigate(`/profile/${u._id}`); }}>
+                        {u.name}
+                      </button>
+                      {currentUserId && String(u._id) !== String(currentUserId) && (
+                        <div className="relative flex-shrink-0" ref={listMenuUserId === u._id ? listMenuRef : null}>
+                          <button type="button" onClick={() => setListMenuUserId((id) => (id === u._id ? null : u._id))} className="p-2 rounded-lg text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600" aria-label="Options">
+                            <MoreVertical size={16} />
+                          </button>
+                          {listMenuUserId === u._id && (
+                            <>
+                              <div className="fixed inset-0 z-10" aria-hidden onClick={() => setListMenuUserId(null)} />
+                              <div className="absolute right-0 top-full mt-1 py-1 w-40 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-lg z-20">
+                                <button type="button" onClick={() => { setListMenuUserId(null); setBlockTargetFromList({ userId: u._id, name: u.name }); }} className="w-full px-4 py-2.5 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                  Block
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Toast */}
       {shareToast && (
@@ -526,18 +707,56 @@ const ProfilePage = () => {
                   </button>
                 ) : (
                   <>
-                    <button onClick={handleFollow} disabled={followLoading}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${following ? 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 shadow-sm'}`}>
-                      {followLoading ? <Loader size={13} className="animate-spin" /> : following ? <Check size={13} /> : <Plus size={13} />}
-{following ? t('profile.followingBtn') : t('profile.follow')}
-                  </button>
-                    {canChat && (
-                      <button onClick={handleChat} disabled={chatLoading}
-                        className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-700 dark:hover:bg-green-600 shadow-sm transition flex items-center gap-1.5">
-                        {chatLoading ? <Loader size={13} className="animate-spin" /> : <MessageSquare size={13} />}
-                        {t('profile.chat')}
-                      </button>
+                    {!user.isBlockedByMe && (
+                      <>
+                        <button onClick={handleFollow} disabled={followLoading}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${following ? 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 shadow-sm'}`}>
+                          {followLoading ? <Loader size={13} className="animate-spin" /> : following ? <Check size={13} /> : <Plus size={13} />}
+                          {following ? t('profile.followingBtn') : t('profile.follow')}
+                        </button>
+                        {canChat && (
+                          <button onClick={handleChat} disabled={chatLoading}
+                            className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-700 dark:hover:bg-green-600 shadow-sm transition flex items-center gap-1.5">
+                            {chatLoading ? <Loader size={13} className="animate-spin" /> : <MessageSquare size={13} />}
+                            {t('profile.chat')}
+                          </button>
+                        )}
+                      </>
                     )}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setProfileMenuOpen((o) => !o)}
+                        className="p-2 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        aria-label="More options"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                      {profileMenuOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setProfileMenuOpen(false)} />
+                          <div className="absolute right-0 top-full mt-1 py-1 w-48 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-lg z-20">
+                            {user.isBlockedByMe ? (
+                              <button
+                                type="button"
+                                onClick={() => { setProfileMenuOpen(false); setShowUnblockModal(true); }}
+                                className="w-full px-4 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                              >
+                                Unblock {user.name || 'user'}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => { setProfileMenuOpen(false); setShowBlockModal(true); }}
+                                className="w-full px-4 py-2.5 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              >
+                                Block {user.name || 'user'}
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -583,12 +802,17 @@ const ProfilePage = () => {
           <div className="border-t border-gray-100 dark:border-gray-700 px-5 sm:px-8 py-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: t('profile.followers'), value: formatNumber(user.followersCount), icon: Users, color: 'text-green-600 dark:text-green-400' },
-                { label: t('profile.following'), value: formatNumber(user.followingCount), icon: Users, color: 'text-blue-600 dark:text-blue-400' },
-                { label: t('profile.posts'), value: user.postsCount, icon: BookOpen, color: 'text-purple-600 dark:text-purple-400' },
-                { label: t('profile.profileViews'), value: user.profileViewers, icon: Eye, color: 'text-orange-600 dark:text-orange-400' },
-              ].map(({ label, value, icon: Icon, color }) => (
-                <div key={label} className="text-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl cursor-pointer transition group">
+                { label: t('profile.followers'), value: formatNumber(user.followersCount), icon: Users, color: 'text-green-600 dark:text-green-400', onClick: () => openListModal('followers') },
+                { label: t('profile.following'), value: formatNumber(user.followingCount), icon: Users, color: 'text-blue-600 dark:text-blue-400', onClick: () => openListModal('following') },
+                { label: t('profile.posts'), value: user.postsCount, icon: BookOpen, color: 'text-purple-600 dark:text-purple-400', onClick: null },
+                { label: t('profile.profileViews'), value: user.profileViewers, icon: Eye, color: 'text-orange-600 dark:text-orange-400', onClick: null },
+              ].map(({ label, value, icon: Icon, color, onClick }) => (
+                <div
+                  key={label}
+                  role={onClick ? 'button' : undefined}
+                  onClick={onClick ?? undefined}
+                  className="text-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl cursor-pointer transition group"
+                >
                   <Icon size={16} className={`${color} mx-auto mb-1 group-hover:scale-110 transition-transform`} />
                   <p className="text-lg font-black text-gray-900 dark:text-gray-100">{value}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
@@ -632,6 +856,12 @@ const ProfilePage = () => {
             </div>
           </div>
 
+          {!user.isOwnProfile && user.isBlockedByMe && (
+            <div className="mx-5 sm:mx-8 mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center gap-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex-1">You've blocked this user.</p>
+              <button type="button" onClick={() => setShowUnblockModal(true)} className="px-4 py-2 rounded-xl text-sm font-bold text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">Unblock</button>
+            </div>
+          )}
           <button onClick={() => setShowMoreInfo(!showMoreInfo)}
             className="w-full py-3 text-sm text-green-700 dark:text-green-400 font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition flex items-center justify-center gap-1.5 border-t border-gray-100 dark:border-gray-700">
             {showMoreInfo ? <><ChevronUp size={15} /> Show Less</> : <><ChevronDown size={15} /> Show More Details</>}
@@ -660,22 +890,28 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Tabs + Content */}
+        {/* Tabs + Content (hide posts grid when viewing someone we blocked) */}
         <div className="bg-white dark:bg-gray-800 rounded-t-none mt-4 shadow-sm dark:shadow-none transition-colors duration-200">
-          <div className="flex border-b border-gray-100 dark:border-gray-700 px-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
-            {[
-              { id: 'posts', label: `Posts (${user.postsCount ?? 0})` },
-              ...(isOwnProfile ? [{ id: 'saved', label: `Saved (${user.savedCount ?? 0})` }] : []),
-            ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3.5 text-sm font-bold border-b-2 transition mr-1 ${activeTab === tab.id ? 'border-green-600 dark:border-green-500 text-green-700 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {!user.isBlockedByMe && (
+            <div className="flex border-b border-gray-100 dark:border-gray-700 px-4 sticky top-0 bg-white dark:bg-gray-800 z-10">
+              {[
+                { id: 'posts', label: `Posts (${user.postsCount ?? 0})` },
+                ...(isOwnProfile ? [{ id: 'saved', label: `Saved (${user.savedCount ?? 0})` }] : []),
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`px-5 py-3.5 text-sm font-bold border-b-2 transition mr-1 ${activeTab === tab.id ? 'border-green-600 dark:border-green-500 text-green-700 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="p-4">
-            {postsLoading ? (
+            {user.isBlockedByMe ? (
+              <div className="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                Posts from this user are hidden because you blocked them.
+              </div>
+            ) : postsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[1,2,3,4].map(i => (
                   <div key={i} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl animate-pulse h-48 border border-gray-100 dark:border-gray-700" />

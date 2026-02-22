@@ -7,8 +7,10 @@ import {
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { chatService } from '../services/chat.service';
+import { userService } from '../services/user.service';
 import { useSocket } from '../context/SocketContext';
 import { ConversationList, MessageBubble as MessageBubbleComponent, MessageInput } from '../components/chat';
+import { BlockConfirmModal } from '../components/BlockModals';
 
 const EMOJI_LIST = ['😀','😊','😂','❤️','👍','🙏','🌾','👋','😅','🔥','✅','💬','🎉','🙂','😎','🤝','💪','🌱','🍅','🥕'];
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop';
@@ -159,6 +161,10 @@ const MessagesPage = () => {
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const chatMenuRef = useRef(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
@@ -249,6 +255,32 @@ const MessagesPage = () => {
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, [showEmojiPicker]);
+
+  useEffect(() => {
+    const close = (e) => {
+      if (chatMenuRef.current && !chatMenuRef.current.contains(e.target)) setShowChatMenu(false);
+    };
+    if (showChatMenu) document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [showChatMenu]);
+
+  const handleBlockFromChat = useCallback(async () => {
+    if (!activeConvo?.participant?._id) return;
+    setBlockLoading(true);
+    try {
+      await userService.blockUser(activeConvo.participant._id);
+      setShowBlockModal(false);
+      setShowChatMenu(false);
+      setConversations((prev) => prev.filter((c) => c._id !== activeConvo._id));
+      setActiveConvo(null);
+      setMessages([]);
+      toast.success('User blocked. You can no longer message each other.');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to block');
+    } finally {
+      setBlockLoading(false);
+    }
+  }, [activeConvo]);
 
   const handleSelectConvo = useCallback(async (convo) => {
     if (activeConvo?._id) leaveConversation(activeConvo._id);
@@ -595,6 +627,14 @@ const MessagesPage = () => {
 
           {/* Chat Area */}
           <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-1 flex-col bg-gray-50 dark:bg-gray-900 min-w-0 transition-colors duration-200`}>
+            {showBlockModal && activeConvo?.participant && (
+              <BlockConfirmModal
+                username={activeConvo.participant.name}
+                onConfirm={handleBlockFromChat}
+                onCancel={() => setShowBlockModal(false)}
+                loading={blockLoading}
+              />
+            )}
             {!activeConvo ? (
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="text-6xl mb-4">🌾</div>
@@ -633,16 +673,34 @@ const MessagesPage = () => {
                       </p>
                     </div>
                   </button>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 relative" ref={chatMenuRef}>
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition">
                       <Phone size={16} />
                     </button>
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition">
                       <Video size={16} />
                     </button>
-                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500 dark:text-gray-400 transition">
+                    <button
+                      onClick={() => setShowChatMenu((v) => !v)}
+                      className={`p-2 rounded-xl text-gray-500 dark:text-gray-400 transition ${showChatMenu ? 'bg-gray-100 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                      aria-label="Chat options"
+                    >
                       <MoreHorizontal size={16} />
                     </button>
+                    {showChatMenu && (
+                      <>
+                        <div className="fixed inset-0 z-10" aria-hidden onClick={() => setShowChatMenu(false)} />
+                        <div className="absolute right-0 top-full mt-1 py-1 w-48 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-lg z-20">
+                          <button
+                            type="button"
+                            onClick={() => { setShowChatMenu(false); setShowBlockModal(true); }}
+                            className="w-full px-4 py-2.5 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            Block {activeConvo.participant.name?.split(' ')[0] || 'user'}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

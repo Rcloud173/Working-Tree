@@ -12,6 +12,9 @@ import { authStore } from '../store/authStore';
 import { userService } from '../services/user.service';
 import { setStoredLanguage } from '../i18n';
 import { useTheme } from '../hooks/useTheme';
+import { useBlockedUsers, useUnblockUser } from '../hooks/usePrivacySecurity';
+import BlockedUsersList from '../components/privacy-security/BlockedUsersList';
+import { UnblockConfirmModal } from '../components/BlockModals';
 
 // ============================================================================
 // ✅ API PLACEHOLDER FUNCTIONS
@@ -550,17 +553,17 @@ const NotificationsSection = ({ data, onToast }) => {
 // ============================================================================
 const PrivacySection = ({ data, onToast }) => {
   const [privacy, setPrivacy] = useState(data);
-  const [blockedUsers, setBlockedUsers] = useState([]);
-  const [blockedLoading, setBlockedLoading] = useState(true);
   const [loading, setLoading] = useState({});
-  const [unblocking, setUnblocking] = useState({});
+  const [unblockConfirm, setUnblockConfirm] = useState(null);
 
-  useEffect(() => {
-    settingsApi.fetchBlockedUsers()
-      .then(({ users }) => setBlockedUsers(users))
-      .catch(() => {})
-      .finally(() => setBlockedLoading(false));
-  }, []);
+  const { data: blockedUsers = [], isLoading: blockedLoading } = useBlockedUsers();
+  const unblockUser = useUnblockUser({
+    onSuccess: () => {
+      onToast('User unblocked', 'success');
+      setUnblockConfirm(null);
+    },
+    onError: () => onToast('Failed to unblock user', 'error'),
+  });
 
   const handleToggle = async (field, value) => {
     setLoading(prev => ({ ...prev, [field]: true }));
@@ -580,21 +583,28 @@ const PrivacySection = ({ data, onToast }) => {
     }
   };
 
-  const handleUnblock = async (userId) => {
-    setUnblocking(prev => ({ ...prev, [userId]: true }));
-    try {
-      await settingsApi.unblockUser(userId);
-      setBlockedUsers(prev => prev.filter(u => u._id !== userId));
-      onToast('User unblocked', 'success');
-    } catch {
-      onToast('Failed to unblock user', 'error');
-    } finally {
-      setUnblocking(prev => ({ ...prev, [userId]: false }));
+  const handleUnblockClick = useCallback((userId) => {
+    const idStr = userId != null ? String(userId) : '';
+    const user = blockedUsers.find((u) => String(u.id ?? u._id) === idStr);
+    setUnblockConfirm({ userId: idStr, username: user?.name ?? 'this user' });
+  }, [blockedUsers]);
+
+  const handleUnblockConfirm = useCallback(() => {
+    if (unblockConfirm?.userId != null) {
+      unblockUser.mutate(String(unblockConfirm.userId));
     }
-  };
+  }, [unblockConfirm, unblockUser]);
 
   return (
     <SectionCard>
+      {unblockConfirm && (
+        <UnblockConfirmModal
+          username={unblockConfirm.username}
+          onConfirm={handleUnblockConfirm}
+          onCancel={() => setUnblockConfirm(null)}
+          loading={unblockUser.isPending}
+        />
+      )}
       <SectionHeader icon={Shield} title="Privacy & Security" subtitle="Protect your account and control your data" />
 
       <div className="divide-y divide-gray-50 dark:divide-gray-700">
@@ -625,49 +635,23 @@ const PrivacySection = ({ data, onToast }) => {
         </SettingRow>
       </div>
 
-      {/* Blocked Users */}
+      {/* Blocked Users — dynamic list from API, unblock with confirmation */}
       <div className="border-t border-gray-100 dark:border-gray-700">
         <div className="px-5 sm:px-6 py-3 bg-gray-50/40 dark:bg-gray-800/50">
           <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
             <UserX size={12} /> Blocked Users ({blockedUsers.length})
           </p>
         </div>
-        {blockedLoading ? (
-          <div className="px-6 py-4 space-y-3 animate-pulse">
-            {[1, 2].map(i => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600" />
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 bg-gray-200 dark:bg-gray-600 rounded w-1/3" />
-                  <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded w-1/4" />
-                </div>
-                <div className="h-8 w-20 bg-gray-200 dark:bg-gray-600 rounded-xl" />
-              </div>
-            ))}
-          </div>
-        ) : blockedUsers.length === 0 ? (
-          <div className="px-6 py-6 text-center">
-            <UserX size={32} className="text-gray-200 dark:text-gray-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-400 dark:text-gray-500">No blocked users</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-50 dark:divide-gray-700">
-            {blockedUsers.map(user => (
-              <div key={user._id} className="flex items-center gap-3 px-5 sm:px-6 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <img src={user.profilePhoto || user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-gray-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{user.name}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Blocked {user.blockedSince}</p>
-                </div>
-                <button onClick={() => handleUnblock(user._id)} disabled={unblocking[user._id]}
-                  className="px-3 py-1.5 text-xs font-bold border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition flex items-center gap-1.5 flex-shrink-0">
-                  {unblocking[user._id] ? <Loader size={11} className="animate-spin" /> : <Check size={11} />}
-                  Unblock
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <BlockedUsersList
+          users={blockedUsers}
+          loading={blockedLoading}
+          onUnblock={handleUnblockClick}
+          unblockingById={
+            unblockUser.isPending && unblockUser.variables != null
+              ? { [String(unblockUser.variables)]: true }
+              : {}
+          }
+        />
       </div>
     </SectionCard>
   );

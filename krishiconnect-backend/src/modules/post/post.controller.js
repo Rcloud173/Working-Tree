@@ -23,14 +23,14 @@ const deletePost = asyncHandler(async (req, res) => {
 });
 
 const getRecent = asyncHandler(async (req, res) => {
-  const result = await postService.getRecent(req.query);
+  const result = await postService.getRecent({ ...req.query, viewerId: req.user?._id });
   res.status(200).json(
     new ApiResponse(200, result.data, 'Recent posts', { pagination: result.pagination })
   );
 });
 
 const getTrending = asyncHandler(async (req, res) => {
-  const result = await postService.getTrending(req.query);
+  const result = await postService.getTrending({ ...req.query, viewerId: req.user?._id });
   res.status(200).json(
     new ApiResponse(200, result.data, 'Trending posts', { pagination: result.pagination })
   );
@@ -52,7 +52,7 @@ const addComment = asyncHandler(async (req, res) => {
 });
 
 const getComments = asyncHandler(async (req, res) => {
-  const result = await postService.getComments(req.params.postId, req.query);
+  const result = await postService.getComments(req.params.postId, { ...req.query, viewerId: req.user?._id });
   res.status(200).json(
     new ApiResponse(200, result.data, 'Comments', { pagination: result.pagination })
   );
@@ -85,7 +85,7 @@ const getSavedPosts = asyncHandler(async (req, res) => {
  * Use GET /users/me/saved for the logged-in user's saved posts only.
  */
 const getUserPosts = asyncHandler(async (req, res) => {
-  const result = await postService.getUserPosts(req.params.userId, req.query);
+  const result = await postService.getUserPosts(req.params.userId, { ...req.query, viewerId: req.user?._id });
   res.status(200).json(
     new ApiResponse(200, result.data, 'User posts', { pagination: result.pagination })
   );

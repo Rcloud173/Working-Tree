@@ -82,14 +82,10 @@ export async function updatePrivacySettings(payload) {
 }
 
 /**
- * GET /api/users/blocked (or /users/blocked)
+ * GET /users/blocked — list of users you have blocked (always uses real API).
  * @returns {Promise<Array<{ id: string, name: string, avatar: string, blockedAt: string }>>}
  */
 export async function fetchBlockedUsers() {
-  if (USE_MOCK) {
-    await delay(500);
-    return MOCK_BLOCKED.map((u) => ({ ...u }));
-  }
   try {
     const { data } = await request('GET', 'users/blocked');
     const list = data?.data ?? data ?? [];
@@ -97,7 +93,6 @@ export async function fetchBlockedUsers() {
     return arr.map(normalizeBlockedUser).filter(Boolean);
   } catch (err) {
     if (err?.response?.status === 404 || err?.code === 'ERR_NETWORK') {
-      await delay(400);
       return [];
     }
     throw err;
@@ -105,16 +100,14 @@ export async function fetchBlockedUsers() {
 }
 
 /**
- * POST /api/users/:id/unblock (or /users/:id/unblock)
- * @param {string} userId
+ * DELETE /users/:userId/block — unblock a user (always uses real API).
+ * @param {string} userId — must be string (id of the blocked user)
  * @returns {Promise<void>}
  */
 export async function unblockUser(userId) {
-  if (USE_MOCK) {
-    await delay(350);
-    return;
-  }
-  await request('POST', `users/${userId}/unblock`);
+  const id = userId != null ? String(userId) : '';
+  if (!id) return;
+  await request('DELETE', `users/${id}/block`);
 }
 
 export const privacySecurityApi = {

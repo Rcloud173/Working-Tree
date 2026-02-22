@@ -89,6 +89,8 @@ router.post(
 );
 
 router.get('/search', userController.searchUsers);
+router.get('/blocked', userController.getBlocked);
+router.get('/:userId/is-blocked', userController.getIsBlocked);
 router.get('/:userId/posts', userController.getPublicUserPosts);
 router.get('/:userId/can-chat', userController.getCanChat);
 router.get('/:userId', userController.getUserById);
@@ -96,5 +98,7 @@ router.post('/:userId/follow', userController.followUser);
 router.delete('/:userId/follow', userController.unfollowUser);
 router.get('/:userId/followers', userController.getFollowers);
 router.get('/:userId/following', userController.getFollowing);
+router.post('/:userId/block', userController.blockUser);
+router.delete('/:userId/block', userController.unblockUser);
 
 module.exports = router;

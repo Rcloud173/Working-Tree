@@ -110,7 +110,7 @@ const getUserById = asyncHandler(async (req, res) => {
 });
 
 const searchUsers = asyncHandler(async (req, res) => {
-  const result = await userService.searchUsers(req.query);
+  const result = await userService.searchUsers(req.query, { viewerId: req.user?._id });
   res.status(200).json(
     new ApiResponse(200, result.data, 'Users fetched successfully', {
       pagination: result.pagination,
@@ -145,7 +145,10 @@ const getCanChat = asyncHandler(async (req, res) => {
 });
 
 const getFollowers = asyncHandler(async (req, res) => {
-  const result = await userService.getFollowers(req.params.userId, req.query);
+  const result = await userService.getFollowers(req.params.userId, {
+    ...req.query,
+    viewerId: req.user?._id,
+  });
   res.status(200).json(
     new ApiResponse(200, result.data, 'Followers fetched successfully', {
       pagination: result.pagination,
@@ -154,11 +157,49 @@ const getFollowers = asyncHandler(async (req, res) => {
 });
 
 const getFollowing = asyncHandler(async (req, res) => {
-  const result = await userService.getFollowing(req.params.userId, req.query);
+  const result = await userService.getFollowing(req.params.userId, {
+    ...req.query,
+    viewerId: req.user?._id,
+  });
   res.status(200).json(
     new ApiResponse(200, result.data, 'Following fetched successfully', {
       pagination: result.pagination,
     })
+  );
+});
+
+const getBlocked = asyncHandler(async (req, res) => {
+  const result = await userService.getBlockedUsers(req.user._id, req.query);
+  const list = (result.data || []).map((doc) => {
+    const u = doc.blocked;
+    if (!u) return null;
+    const id = u._id;
+    const name = u.name || 'Unknown';
+    const avatar = u.profilePhoto?.url ?? u.avatar?.url ?? u.avatar ?? '';
+    return { _id: id, id, name, username: u.username, avatar, profilePhoto: u.profilePhoto, blockedAt: doc.createdAt };
+  }).filter(Boolean);
+  res.status(200).json(
+    new ApiResponse(200, list, 'Blocked users', { pagination: result.pagination })
+  );
+});
+
+const blockUser = asyncHandler(async (req, res) => {
+  await userService.blockUser(req.user._id, req.params.userId);
+  res.status(200).json(new ApiResponse(200, { success: true }, 'User blocked'));
+});
+
+const unblockUser = asyncHandler(async (req, res) => {
+  await userService.unblockUser(req.user._id, req.params.userId);
+  res.status(200).json(new ApiResponse(200, { success: true }, 'User unblocked'));
+});
+
+const getIsBlocked = asyncHandler(async (req, res) => {
+  const [iBlockThem, theyBlockMe] = await Promise.all([
+    userService.isBlocked(req.user._id, req.params.userId),
+    userService.isBlocked(req.params.userId, req.user._id),
+  ]);
+  res.status(200).json(
+    new ApiResponse(200, { isBlocked: iBlockThem, hasBlockedMe: theyBlockMe }, 'OK')
   );
 });
 
@@ -184,4 +225,8 @@ module.exports = {
   unfollowUser,
   getFollowers,
   getFollowing,
+  getBlocked,
+  blockUser,
+  unblockUser,
+  getIsBlocked,
 };

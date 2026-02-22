@@ -1,6 +1,7 @@
 const Conversation = require('./models/conversation.model');
 const Message = require('./models/message.model');
 const Follow = require('../user/follow.model');
+const userService = require('../user/user.service');
 const ApiError = require('../../utils/ApiError');
 const Pagination = require('../../utils/pagination');
 const { encrypt, decrypt } = require('../../utils/encryption');
@@ -11,16 +12,20 @@ const messagePagination = new Pagination(Message);
 const PREVIEW_MAX_LENGTH = 80;
 
 /**
- * User A can chat with User B iff A follows B OR B follows A (at least one direction).
+ * User A can chat with User B iff A follows B OR B follows A (at least one direction),
+ * and neither has blocked the other.
  */
 async function canChatWith(currentUserId, otherUserId) {
   if (String(currentUserId) === String(otherUserId)) {
     return false;
   }
-  const [aFollowsB, bFollowsA] = await Promise.all([
+  const [aFollowsB, bFollowsA, aBlockedB, bBlockedA] = await Promise.all([
     Follow.findOne({ follower: currentUserId, following: otherUserId }),
     Follow.findOne({ follower: otherUserId, following: currentUserId }),
+    userService.isBlocked(currentUserId, otherUserId),
+    userService.isBlocked(otherUserId, currentUserId),
   ]);
+  if (aBlockedB || bBlockedA) return false;
   return !!(aFollowsB || bFollowsA);
 }
 
@@ -105,6 +110,15 @@ const getConversations = async (userId, options = {}) => {
       ],
     }
   );
+
+  const excludeIds = await userService.getBlockExcludeIds(userId);
+  if (excludeIds.length) {
+    result.data = result.data.filter((conv) => {
+      const other = conv.participants.find((p) => String(p.user?._id ?? p.user) !== String(userId));
+      const otherId = other?.user?._id ?? other?.user;
+      return otherId && !excludeIds.includes(otherId.toString());
+    });
+  }
 
   const unreadCounts = await Promise.all(
     result.data.map(async (conv) => {

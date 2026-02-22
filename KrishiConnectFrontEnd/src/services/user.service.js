@@ -67,6 +67,7 @@ export function mapUserToProfile(raw, currentUserId) {
     languages: Array.isArray(raw.languages) ? raw.languages.map((l) => l.charAt(0).toUpperCase() + l.slice(1)) : [],
     isOwnProfile: currentUserId ? String(raw._id) === String(currentUserId) : false,
     isFollowing: !!raw.isFollowing,
+    isBlockedByMe: !!raw.isBlockedByMe,
   };
 }
 
@@ -125,6 +126,49 @@ export const userService = {
   async unfollowUser(userId) {
     await request('DELETE', `/users/${userId}/follow`);
     return { success: true };
+  },
+
+  /** POST /users/:userId/block — block a user (requires auth). */
+  async blockUser(userId) {
+    const { data } = await request('POST', `users/${userId}/block`);
+    return data?.data ?? data ?? { success: true };
+  },
+
+  /** DELETE /users/:userId/block — unblock a user (requires auth). */
+  async unblockUser(userId) {
+    await request('DELETE', `users/${userId}/block`);
+    return { success: true };
+  },
+
+  /** GET /users/blocked — list of users I have blocked (requires auth). */
+  async getBlockedUsers(page = 1, limit = 50) {
+    const { data } = await request('GET', `users/blocked?page=${page}&limit=${limit}`);
+    const list = data?.data ?? data ?? [];
+    return Array.isArray(list) ? list : [];
+  },
+
+  /** GET /users/:userId/is-blocked — { isBlocked, hasBlockedMe } (requires auth). */
+  async getBlockStatus(userId) {
+    const { data } = await request('GET', `users/${userId}/is-blocked`);
+    return data?.data ?? data ?? { isBlocked: false, hasBlockedMe: false };
+  },
+
+  /** GET /users/:userId/followers — paginated list. */
+  async getFollowers(userId, page = 1, limit = 30) {
+    const res = await request('GET', `users/${userId}/followers?page=${page}&limit=${limit}`);
+    const data = res?.data;
+    const list = data?.data ?? data ?? [];
+    const pagination = data?.pagination ?? data?.meta?.pagination;
+    return { data: Array.isArray(list) ? list : [], pagination };
+  },
+
+  /** GET /users/:userId/following — paginated list. */
+  async getFollowing(userId, page = 1, limit = 30) {
+    const res = await request('GET', `users/${userId}/following?page=${page}&limit=${limit}`);
+    const data = res?.data;
+    const list = data?.data ?? data ?? [];
+    const pagination = data?.pagination ?? data?.meta?.pagination;
+    return { data: Array.isArray(list) ? list : [], pagination };
   },
 
   /** PUT /users/me/update-password (requires auth). Body: { currentPassword, newPassword } */

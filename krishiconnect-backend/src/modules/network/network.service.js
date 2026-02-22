@@ -5,6 +5,7 @@
 const mongoose = require('mongoose');
 const User = require('../user/user.model');
 const Follow = require('../user/follow.model');
+const userService = require('../user/user.service');
 const ApiError = require('../../utils/ApiError');
 const { computeRecommendationScore } = require('../../utils/scoring');
 const logger = require('../../config/logger');
@@ -192,20 +193,25 @@ async function getRecommendations(userId, options = {}) {
   const limit = Math.min(Math.max(1, requestedLimit), 50);
   const poolSize = Math.min(limit * 5, MAX_POOL_SIZE);
 
-  const [currentUser, followingIds] = await Promise.all([
+  const [currentUser, followingIds, blockExcludeIds] = await Promise.all([
     User.findById(userId)
       .select('location')
       .lean(),
     getFollowingIds(userId),
+    userService.getBlockExcludeIds(userId),
   ]);
 
   if (!currentUser) {
     throw new ApiError(404, 'User not found');
   }
 
-  const excludeIds = [userId, ...followingIds].map((id) =>
-    typeof id === 'string' ? id : id
-  );
+  const excludeIds = [
+    ...new Set([
+      String(userId),
+      ...followingIds.map((id) => id.toString()),
+      ...(blockExcludeIds || []),
+    ]),
+  ];
   const location = normalizeLocation(currentUser.location);
 
   if (DEBUG) {

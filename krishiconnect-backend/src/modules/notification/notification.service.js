@@ -1,4 +1,5 @@
 const Notification = require('./notification.model');
+const userService = require('../user/user.service');
 const Pagination = require('../../utils/pagination');
 
 const notificationPagination = new Pagination(Notification);
@@ -11,6 +12,9 @@ const getByUser = async (userId, options = {}) => {
   const { page = 1, limit = 50, read } = options;
   const query = { recipient: userId };
   if (read !== undefined) query.isRead = read === 'true';
+
+  const blockedIds = await userService.getBlockedIds(userId);
+  if (blockedIds.length) query.actor = { $nin: blockedIds };
 
   return notificationPagination.paginate(query, {
     page,

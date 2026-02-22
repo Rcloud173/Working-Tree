@@ -13,6 +13,7 @@ const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1472099645785-5658abf4
  */
 export default function BlockedUserItem({ user, onUnblock, unblocking = false }) {
   const userId = user.id ?? user._id;
+  const idStr = userId != null ? String(userId) : '';
   const name = user.name ?? 'Unknown';
   const avatar = user.avatar || user.profilePhoto?.url || user.profilePhoto || DEFAULT_AVATAR;
   const blockedLabel = user.blockedAt
@@ -37,7 +38,7 @@ export default function BlockedUserItem({ user, onUnblock, unblocking = false })
       </div>
       <button
         type="button"
-        onClick={() => onUnblock(userId)}
+        onClick={() => onUnblock(idStr)}
         disabled={unblocking}
         className="px-3 py-1.5 text-xs font-bold border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50"
         aria-label={`Unblock ${name}`}

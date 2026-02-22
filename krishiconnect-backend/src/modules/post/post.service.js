@@ -1,6 +1,7 @@
 const Post = require('./models/post.model');
 const Comment = require('./models/comment.model');
 const User = require('../user/user.model');
+const userService = require('../user/user.service');
 const ApiError = require('../../utils/ApiError');
 const { uploadToCloudinary } = require('../../utils/uploadToCloudinary');
 const Pagination = require('../../utils/pagination');
@@ -70,29 +71,33 @@ const deletePost = async (postId, userId) => {
 };
 
 const getRecent = async (options = {}) => {
-  const { page = 1, limit = 20 } = options;
-  return postPagination.paginate(
-    {},
-    {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: [{ path: 'author', select: AUTHOR_SELECT }],
-    }
-  );
+  const { page = 1, limit = 20, viewerId } = options;
+  const query = {};
+  if (viewerId) {
+    const excludeIds = await userService.getBlockExcludeIds(viewerId);
+    if (excludeIds.length) query.author = { $nin: excludeIds };
+  }
+  return postPagination.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: [{ path: 'author', select: AUTHOR_SELECT }],
+  });
 };
 
 const getTrending = async (options = {}) => {
-  const { page = 1, limit = 20 } = options;
-  return postPagination.paginate(
-    {},
-    {
-      page,
-      limit,
-      sort: { likesCount: -1, createdAt: -1 },
-      populate: [{ path: 'author', select: AUTHOR_SELECT }],
-    }
-  );
+  const { page = 1, limit = 20, viewerId } = options;
+  const query = {};
+  if (viewerId) {
+    const excludeIds = await userService.getBlockExcludeIds(viewerId);
+    if (excludeIds.length) query.author = { $nin: excludeIds };
+  }
+  return postPagination.paginate(query, {
+    page,
+    limit,
+    sort: { likesCount: -1, createdAt: -1 },
+    populate: [{ path: 'author', select: AUTHOR_SELECT }],
+  });
 };
 
 const getPostById = async (postId, userId = null) => {
@@ -101,13 +106,20 @@ const getPostById = async (postId, userId = null) => {
     .lean();
   if (!post) throw new ApiError(404, 'Post not found');
 
+  const authorId = post.author?._id || post.author;
+  if (userId && authorId) {
+    const excludeIds = await userService.getBlockExcludeIds(userId);
+    if (excludeIds.includes(authorId.toString())) {
+      throw new ApiError(404, 'Post not found');
+    }
+  }
+
   if (userId) {
     post.isLiked = post.likes && post.likes.some((id) => id.toString() === userId.toString());
     post.isSaved = post.savedBy && post.savedBy.some((id) => id.toString() === userId.toString());
   }
 
   // Record view and update author's post impressions (don't count when author views own post)
-  const authorId = post.author?._id || post.author;
   if (authorId && (!userId || userId.toString() !== authorId.toString())) {
     await Post.findByIdAndUpdate(postId, { $inc: { views: 1 } });
     await User.findByIdAndUpdate(authorId, { $inc: { 'stats.postImpressions': 1 } });
@@ -159,16 +171,18 @@ const addComment = async (postId, userId, { content }) => {
 };
 
 const getComments = async (postId, options = {}) => {
-  const { page = 1, limit = 50 } = options;
-  return commentPagination.paginate(
-    { post: postId, parentComment: null },
-    {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: [{ path: 'author', select: AUTHOR_SELECT }],
-    }
-  );
+  const { page = 1, limit = 50, viewerId } = options;
+  const query = { post: postId, parentComment: null };
+  if (viewerId) {
+    const excludeIds = await userService.getBlockExcludeIds(viewerId);
+    if (excludeIds.length) query.author = { $nin: excludeIds };
+  }
+  return commentPagination.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: [{ path: 'author', select: AUTHOR_SELECT }],
+  });
 };
 
 const toggleSave = async (postId, userId) => {
@@ -198,19 +212,28 @@ const toggleSave = async (postId, userId) => {
 
 const getSavedPosts = async (userId, options = {}) => {
   const { page = 1, limit = 20 } = options;
-  return postPagination.paginate(
-    { savedBy: userId },
-    {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: [{ path: 'author', select: AUTHOR_SELECT }],
-    }
-  );
+  const query = { savedBy: userId };
+  const excludeIds = await userService.getBlockExcludeIds(userId);
+  if (excludeIds.length) query.author = { $nin: excludeIds };
+  return postPagination.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: [{ path: 'author', select: AUTHOR_SELECT }],
+  });
 };
 
 const getUserPosts = async (userId, options = {}) => {
-  const { page = 1, limit = 20 } = options;
+  const { page = 1, limit = 20, viewerId } = options;
+  if (viewerId && viewerId.toString() !== userId.toString()) {
+    const blockRel = await userService.getBlockRelationship(viewerId, userId);
+    if (blockRel.iBlockThem || blockRel.theyBlockMe) {
+      return postPagination.paginate(
+        { _id: { $in: [] } },
+        { page: 1, limit, sort: { createdAt: -1 }, populate: [{ path: 'author', select: AUTHOR_SELECT }] }
+      );
+    }
+  }
   return postPagination.paginate(
     { author: userId },
     {

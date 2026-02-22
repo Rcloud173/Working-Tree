@@ -11,6 +11,8 @@ import {
 import { postService } from '../services/post.service';
 import { userService } from '../services/user.service';
 import { authStore } from '../store/authStore';
+import { BlockConfirmModal } from '../components/BlockModals';
+import toast from 'react-hot-toast';
 import AIChatPanel from '../components/AIChatPanel';
 import { useTranslatePost } from '../hooks/useTranslatePost';
 import { useWeather, INDIAN_CITIES } from '../hooks/useWeather';
@@ -736,11 +738,15 @@ const EditProfileModal = ({ user, onClose, onUpdated }) => {
 // ============================================================================
 // COMMENTS SECTION
 // ============================================================================
-const CommentsSection = ({ postId, currentUser }) => {
+const CommentsSection = ({ postId, currentUser, onAuthorBlocked }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [blockTarget, setBlockTarget] = useState(null);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [openMenuCommentId, setOpenMenuCommentId] = useState(null);
+  const menuRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -752,6 +758,28 @@ const CommentsSection = ({ postId, currentUser }) => {
       } catch { setComments([]); } finally { setLoading(false); }
     })();
   }, [postId]);
+
+  useEffect(() => {
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenuCommentId(null); };
+    if (openMenuCommentId) document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [openMenuCommentId]);
+
+  const handleBlockFromComment = async () => {
+    if (!blockTarget?.id) return;
+    setBlockLoading(true);
+    try {
+      await userService.blockUser(blockTarget.id);
+      setBlockTarget(null);
+      setComments((prev) => prev.filter((c) => String(c.author?._id) !== String(blockTarget.id)));
+      onAuthorBlocked?.(blockTarget.id);
+      toast.success('User blocked');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to block');
+    } finally {
+      setBlockLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
@@ -805,29 +833,69 @@ const CommentsSection = ({ postId, currentUser }) => {
         </p>
       ) : (
         <div className="flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
-          {comments.map(c => (
-            <div key={c._id} className="flex gap-2.5">
-              <img
-                src={c.author.avatar}
-                alt={c.author.name}
-                className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-pointer"
-                onClick={() => navigate(`/profile/${c.author._id}`)}
-              />
-              <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-[14px] py-2.5 px-3.5">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className="text-xs font-bold text-gray-900 dark:text-gray-100 cursor-pointer"
-                    onClick={() => navigate(`/profile/${c.author._id}`)}
-                  >
-                    {c.author.name}
-                  </span>
-                  <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatTimeAgo(c.createdAt)}</span>
+          {comments.map(c => {
+            const isOwnComment = currentUser && String(c.author?._id) === String(currentUser._id);
+            return (
+              <div key={c._id} className="flex gap-2.5 group/comment">
+                <img
+                  src={c.author?.avatar}
+                  alt={c.author?.name}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                  onClick={() => navigate(`/profile/${c.author._id}`)}
+                />
+                <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-700 rounded-[14px] py-2.5 px-3.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className="text-xs font-bold text-gray-900 dark:text-gray-100 cursor-pointer truncate"
+                      onClick={() => navigate(`/profile/${c.author._id}`)}
+                    >
+                      {c.author?.name}
+                    </span>
+                    <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">{formatTimeAgo(c.createdAt)}</span>
+                    {!isOwnComment && currentUser && (
+                      <div className="relative ml-auto flex-shrink-0" ref={openMenuCommentId === c._id ? menuRef : null}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenMenuCommentId((id) => (id === c._id ? null : c._id))}
+                          className="p-1 rounded-lg text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-600 dark:hover:text-gray-300"
+                          aria-label="Comment options"
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                        {openMenuCommentId === c._id && (
+                          <>
+                            <div className="fixed inset-0 z-10" aria-hidden onClick={() => setOpenMenuCommentId(null)} />
+                            <div className="absolute right-0 top-full mt-0.5 py-1 w-40 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-lg z-20">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuCommentId(null);
+                                  setBlockTarget({ id: c.author._id, name: c.author?.name || 'user' });
+                                }}
+                                className="w-full px-3 py-2 text-left text-[13px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              >
+                                Block {c.author?.name?.split(' ')[0] || 'user'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[13px] text-gray-600 dark:text-gray-300 leading-snug">{c.content}</p>
                 </div>
-                <p className="text-[13px] text-gray-600 dark:text-gray-300 leading-snug">{c.content}</p>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+      {blockTarget && (
+        <BlockConfirmModal
+          username={blockTarget.name}
+          onConfirm={handleBlockFromComment}
+          onCancel={() => setBlockTarget(null)}
+          loading={blockLoading}
+        />
       )}
     </div>
   );
@@ -836,7 +904,7 @@ const CommentsSection = ({ postId, currentUser }) => {
 // ============================================================================
 // POST CARD
 // ============================================================================
-const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
+const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted, onAuthorBlocked }) => {
   const navigate = useNavigate();
   const [liked, setLiked] = useState(post?.isLiked ?? false);
   const [likesCount, setLikesCount] = useState(post?.likesCount ?? 0);
@@ -846,6 +914,8 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
   const [showComments, setShowComments] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -906,6 +976,22 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
     setShowDropdown(false);
   };
 
+  const handleBlockConfirm = async () => {
+    if (!post?.author?._id) return;
+    setBlockLoading(true);
+    try {
+      await userService.blockUser(post.author._id);
+      setShowBlockModal(false);
+      setShowDropdown(false);
+      onAuthorBlocked?.(post._id);
+      toast.success('User blocked');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to block');
+    } finally {
+      setBlockLoading(false);
+    }
+  };
+
   const content = post?.content ?? '';
   const isLong = content.length > 180;
   const displayContent = isLong && !showMore ? content.slice(0, 180) + '…' : content;
@@ -935,6 +1021,14 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
   return (
     <>
       {showReportModal && <ReportModal postId={post._id} onClose={() => setShowReportModal(false)} />}
+      {showBlockModal && (
+        <BlockConfirmModal
+          username={post?.author?.name || post?.author?.username}
+          onConfirm={handleBlockConfirm}
+          onCancel={() => setShowBlockModal(false)}
+          loading={blockLoading}
+        />
+      )}
 
       <article className="card post-card anim-fade-slide bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none transition-colors duration-200" style={{ marginBottom: 12, overflow: 'hidden' }}>
         {/* Post Header */}
@@ -975,14 +1069,22 @@ const PostCard = memo(({ post, currentUser, onPostUpdate, onPostDeleted }) => {
             {showDropdown && (
               <div className="anim-scale-in dropdown-shadow absolute right-0 top-[38px] bg-white dark:bg-gray-800 rounded-[14px] w-[196px] z-30 border border-gray-100 dark:border-gray-700 overflow-hidden">
                 {!isOwn && (
-                  <button
-                    onClick={handleFollow}
-                    disabled={followLoading}
-                    className="btn w-full flex items-center gap-2 py-3 px-4 text-[13px] font-medium text-gray-700 dark:text-gray-300 text-left hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-colors"
-                  >
-                    {followLoading ? <Loader size={14} className="spin" /> : <Users size={14} />}
-                    {isFollowing ? t('post.unfollow') : t('post.follow')} {post.author.name.split(' ')[0]}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleFollow}
+                      disabled={followLoading}
+                      className="btn w-full flex items-center gap-2 py-3 px-4 text-[13px] font-medium text-gray-700 dark:text-gray-300 text-left hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-colors"
+                    >
+                      {followLoading ? <Loader size={14} className="spin" /> : <Users size={14} />}
+                      {isFollowing ? t('post.unfollow') : t('post.follow')} {post.author.name.split(' ')[0]}
+                    </button>
+                    <button
+                      onClick={() => { setShowDropdown(false); setShowBlockModal(true); }}
+                      className="btn w-full flex items-center gap-2 py-3 px-4 text-[13px] font-medium text-red-600 dark:text-red-400 text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      Block {post.author.name?.split(' ')[0] || 'user'}
+                    </button>
+                  </>
                 )}
                 {isOwn && onPostDeleted && (
                   <button
@@ -1925,7 +2027,8 @@ const HomePage = () => {
                   onPostDeleted={(postId, postsCount) => {
                     setPosts(p => p.filter(x => x._id !== postId));
                     setCurrentUser(prev => prev && typeof postsCount === 'number' ? { ...prev, stats: { ...(prev.stats || {}), postsCount } } : prev);
-                  }} />
+                  }}
+                  onAuthorBlocked={(postId) => setPosts(p => p.filter(x => x._id !== postId))} />
               ))}
 
               {/* Load more */}

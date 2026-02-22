@@ -50,21 +50,25 @@ export default function BlockedUsersList({
           className="text-gray-200 dark:text-gray-600 mx-auto mb-2"
           aria-hidden
         />
-        <p className="text-sm text-gray-400 dark:text-gray-500">No blocked users</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">You haven't blocked anyone</p>
       </div>
     );
   }
 
   return (
     <div className="divide-y divide-gray-50 dark:divide-gray-700" data-testid="blocked-users-list">
-      {users.map((user) => (
-        <BlockedUserItem
-          key={user.id ?? user._id}
-          user={user}
-          onUnblock={onUnblock}
-          unblocking={unblockingById[user.id ?? user._id]}
-        />
-      ))}
+      {users.map((user, index) => {
+        const uid = user.id ?? user._id;
+        const idStr = uid != null ? String(uid) : `user-${index}`;
+        return (
+          <BlockedUserItem
+            key={idStr}
+            user={user}
+            onUnblock={onUnblock}
+            unblocking={unblockingById[idStr]}
+          />
+        );
+      })}
     </div>
   );
 }
