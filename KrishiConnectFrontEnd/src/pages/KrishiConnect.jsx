@@ -10,6 +10,10 @@ import {
 } from 'lucide-react';
 import { postService } from '../services/post.service';
 import { userService } from '../services/user.service';
+<<<<<<< HEAD
+=======
+import { searchService } from '../services/search.service';
+>>>>>>> main
 import { authStore } from '../store/authStore';
 
 // ============================================================================
@@ -1778,6 +1782,15 @@ const KrishiConnect = () => {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [notificationCount] = useState(5);
   const [toast, setToast] = useState(null);
+<<<<<<< HEAD
+=======
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const searchWrapperRef = useRef(null);
+  const searchDebounceRef = useRef(null);
+>>>>>>> main
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -1795,6 +1808,41 @@ const KrishiConnect = () => {
   }, []);
 
   useEffect(() => {
+<<<<<<< HEAD
+=======
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const { data } = await searchService.searchUsers(searchQuery.trim(), { page: 1, limit: 5 });
+        setSearchResults(Array.isArray(data) ? data : []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target)) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+>>>>>>> main
     if (activeNav !== 'home') return;
     (async () => {
       setPostsLoading(true); setPostsError(null);
@@ -1871,12 +1919,25 @@ const KrishiConnect = () => {
           boxShadow: '0 1px 0 rgb(0 0 0 / 0.04)',
         }} className="topbar-desktop">
           {/* Search */}
+<<<<<<< HEAD
           <div style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
+=======
+          <div ref={searchWrapperRef} style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
+>>>>>>> main
             <Search size={15} style={{
               position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
               color: '#94a3b8', pointerEvents: 'none',
             }} />
+<<<<<<< HEAD
             <input type="search" placeholder="Search farmers, posts, topics..."
+=======
+            <input
+              type="search"
+              placeholder="Search farmers, posts, topics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchDropdownOpen(true)}
+>>>>>>> main
               className="input-base"
               style={{
                 width: '100%', paddingLeft: 40, paddingRight: 16,
@@ -1886,6 +1947,56 @@ const KrishiConnect = () => {
                 fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#1e293b',
               }}
             />
+<<<<<<< HEAD
+=======
+            {searchDropdownOpen && (searchQuery.trim() || searchResults.length > 0 || searchLoading) && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+                padding: '4px 0', background: 'white', border: '1px solid #e2e8f0',
+                borderRadius: 12, boxShadow: '0 10px 25px rgb(0 0 0 / 0.1)', zIndex: 50,
+                maxHeight: 280, overflowY: 'auto',
+              }}>
+                {searchLoading ? (
+                  <div style={{ padding: '12px 16px', fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Loader size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Searching...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+                    {searchResults.map((user) => (
+                      <li key={user._id}>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                          onClick={() => {
+                            setSearchDropdownOpen(false);
+                            setSearchQuery('');
+                            navigate(`/profile/${user._id}`);
+                          }}
+                        >
+                          <img
+                            src={user.profilePhoto?.url || user.avatar?.url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop'}
+                            alt=""
+                            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                          />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</p>
+                            <p style={{ margin: 0, fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {[user.username, user.expertDetails?.specialization, [user.location?.city, user.location?.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'Farmer'}
+                            </p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : searchQuery.trim() ? (
+                  <div style={{ padding: '12px 16px', fontSize: 13, color: '#64748b' }}>No results found</div>
+                ) : null}
+              </div>
+            )}
+>>>>>>> main
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>

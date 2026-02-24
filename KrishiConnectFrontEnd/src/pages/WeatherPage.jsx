@@ -5,6 +5,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, RefreshCw, Navigation, AlertCircle } from 'lucide-react';
 import { useWeather, forwardGeocode, INDIAN_CITIES } from '../hooks/useWeather';
+<<<<<<< HEAD
+=======
+import { useWeatherCoords } from '../context/WeatherContext';
+>>>>>>> main
 import {
   AlertBanner,
   HeroCard,
@@ -44,7 +48,11 @@ const PERMISSION_BANNER = {
 };
 
 export default function WeatherPage() {
+<<<<<<< HEAD
   const [coords, setCoords] = useState(null);
+=======
+  const { coords, setCoords } = useWeatherCoords();
+>>>>>>> main
   const [locationDenied, setLocationDenied] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const [searchInput, setSearchInput] = useState('');
@@ -87,6 +95,7 @@ export default function WeatherPage() {
       },
       { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
     );
+<<<<<<< HEAD
   }, []);
 
   useEffect(() => {
@@ -135,6 +144,14 @@ export default function WeatherPage() {
     const q = searchInput.trim();
     if (!q) return;
     setSearchLoading(true);
+=======
+  }, [setCoords]);
+
+  const setCoordsFromQuery = useCallback(async (query, setLoading) => {
+    const q = query?.trim();
+    if (!q) return;
+    setLoading(true);
+>>>>>>> main
     try {
       const geo = await forwardGeocode(q);
       if (geo) {
@@ -148,9 +165,28 @@ export default function WeatherPage() {
         }
       }
     } finally {
+<<<<<<< HEAD
       setSearchLoading(false);
     }
   }, [searchInput]);
+=======
+      setLoading(false);
+    }
+  }, [setCoords]);
+
+  const handleSearch = useCallback((e) => {
+    e?.preventDefault();
+    setCoordsFromQuery(searchInput, setSearchLoading);
+  }, [searchInput, setCoordsFromQuery]);
+
+  const handleQuickPickChange = useCallback((e) => {
+    const v = e.target.value;
+    if (v) {
+      const c = INDIAN_CITIES.find((x) => x.name === v);
+      if (c) setCoords({ lat: c.lat, lon: c.lon });
+    }
+  }, [setCoords]);
+>>>>>>> main
 
   const locationName = location ? [location.city, location.area, location.country].filter(Boolean).join(', ') : currentWeather?.location;
   const lastUpdatedMins = lastUpdated ? Math.round((Date.now() - lastUpdated) / 60000) : null;
@@ -158,6 +194,7 @@ export default function WeatherPage() {
   return (
     <div style={DASHBOARD_STYLE}>
       <style>{`
+<<<<<<< HEAD
         .weather-grid { display: grid; gap: 16px; }
         @media (min-width: 768px) {
           .weather-grid { grid-template-columns: 1fr 1fr; }
@@ -176,6 +213,79 @@ export default function WeatherPage() {
           .weather-daily { grid-column: 1 / -1; grid-row: 4; }
           .weather-rain { grid-column: 1; grid-row: 5; }
           .weather-map { grid-column: 2; grid-row: 5; }
+=======
+        .weather-two-col {
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+          width: 100%;
+          min-height: 0;
+        }
+        .weather-left {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .weather-hero-wrap {
+          width: 100%;
+          min-width: 0;
+        }
+        .weather-hourly-wrap {
+          width: 100%;
+          min-width: 0;
+        }
+        .weather-hourly-wrap > * {
+          width: 100%;
+          min-width: 0;
+        }
+        .weather-sun-aqi-uv {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        @media (min-width: 640px) {
+          .weather-sun-aqi-uv {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        .weather-daily-wrap {
+          width: 100%;
+        }
+        .weather-rain-map {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        @media (min-width: 768px) {
+          .weather-rain-map {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        .weather-stats-panel {
+          width: 280px;
+          flex-shrink: 0;
+          display: none;
+          flex-direction: column;
+          gap: 10px;
+          max-height: calc(100vh - 180px);
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-right: 4px;
+        }
+        @media (min-width: 1024px) {
+          .weather-stats-panel {
+            display: flex;
+          }
+          .weather-stats-mobile {
+            display: none;
+          }
+        }
+        .weather-stats-mobile {
+          display: block;
+          width: 100%;
+>>>>>>> main
         }
       `}</style>
 
@@ -203,6 +313,7 @@ export default function WeatherPage() {
             {searchLoading ? '...' : 'Search'}
           </button>
           <select
+<<<<<<< HEAD
             onChange={(e) => {
               const v = e.target.value;
               if (v) {
@@ -210,6 +321,9 @@ export default function WeatherPage() {
                 if (c) setCoords({ lat: c.lat, lon: c.lon });
               }
             }}
+=======
+            onChange={handleQuickPickChange}
+>>>>>>> main
             style={{ padding: '10px 12px', background: '#1a1d27', border: '1px solid #2a2d3a', borderRadius: 12, color: '#fff', minWidth: 140 }}
           >
             <option value="">Quick: Indian cities</option>
@@ -276,6 +390,7 @@ export default function WeatherPage() {
               Loading weather…
             </div>
           ) : (
+<<<<<<< HEAD
             <div className="weather-grid" style={{ gap: 16 }}>
               <div className="weather-hero">
                 <HeroCard currentWeather={currentWeather} locationName={locationName} liveTime={liveTime} />
@@ -300,6 +415,35 @@ export default function WeatherPage() {
               <div className="weather-map">
                 <WeatherMap lat={coords.lat} lon={coords.lon} locationName={locationName} condition={currentWeather?.condition} temperature={currentWeather?.temperature} />
               </div>
+=======
+            <div className="weather-two-col">
+              <div className="weather-left">
+                <div className="weather-hero-wrap">
+                  <HeroCard currentWeather={currentWeather} locationName={locationName} liveTime={liveTime} />
+                </div>
+                <div className="weather-hourly-wrap">
+                  <HourlyForecast hourly={hourly} currentTime={liveTime?.toISOString?.() ?? new Date().toISOString()} />
+                </div>
+                <div className="weather-sun-aqi-uv">
+                  <SunriseSunset forecast={forecast} />
+                  <AQICard airQuality={airQuality} />
+                  <UVCard uvIndex={currentWeather?.uvIndex} />
+                </div>
+                <div className="weather-daily-wrap">
+                  <DailyForecast forecast={forecast} />
+                </div>
+                <div className="weather-rain-map">
+                  <RainRadar hourly={hourly} weatherUnion={weatherUnion} currentTime={liveTime} />
+                  <WeatherMap lat={coords.lat} lon={coords.lon} locationName={locationName} condition={currentWeather?.condition} temperature={currentWeather?.temperature} />
+                </div>
+                <div className="weather-stats-mobile">
+                  <StatsGrid currentWeather={currentWeather} weatherUnion={weatherUnion} />
+                </div>
+              </div>
+              <div className="weather-stats-panel">
+                <StatsGrid currentWeather={currentWeather} weatherUnion={weatherUnion} />
+              </div>
+>>>>>>> main
             </div>
           )}
         </>

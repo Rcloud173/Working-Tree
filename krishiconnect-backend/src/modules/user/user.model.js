@@ -221,7 +221,22 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ phoneNumber: 1 });
 userSchema.index({ email: 1 });
+<<<<<<< HEAD
 userSchema.index({ name: 'text' });
+=======
+// Single compound text index for search (name, username, bio, specialization, location)
+userSchema.index(
+  {
+    name: 'text',
+    username: 'text',
+    bio: 'text',
+    'expertDetails.specialization': 'text',
+    'location.city': 'text',
+    'location.state': 'text',
+  },
+  { name: 'search_text' }
+);
+>>>>>>> main
 userSchema.index({ 'location.state': 1, 'location.district': 1 });
 userSchema.index({ isExpert: 1, 'expertDetails.specialization': 1 });
 userSchema.index({ createdAt: -1 });

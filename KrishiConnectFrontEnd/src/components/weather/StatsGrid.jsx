@@ -9,8 +9,16 @@ const cardStyle = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+<<<<<<< HEAD
   gap: 6,
   minWidth: 80,
+=======
+  justifyContent: 'center',
+  gap: 6,
+  minWidth: 80,
+  minHeight: 88,
+  flexShrink: 0,
+>>>>>>> main
 };
 
 const iconStyle = { color: '#4f9cf9' };
@@ -43,7 +51,11 @@ export default function StatsGrid({ currentWeather, weatherUnion }) {
   const rainAccumulation = wu.rain_accumulation;
 
   return (
+<<<<<<< HEAD
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+=======
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
+>>>>>>> main
       <StatCard icon={Wind} label="Wind" value={windDisplay} unit="" />
       <StatCard icon={Droplets} label="Humidity" value={humidity} unit={humidity != null ? '%' : ''} />
       <StatCard icon={Eye} label="Visibility" value={visibility} unit={visibility != null ? ' km' : ''} />

@@ -140,6 +140,7 @@ export async function forwardGeocode(query) {
   }
 }
 
+<<<<<<< HEAD
 /** Indian cities fallback when forward geocode fails */
 export const INDIAN_CITIES = [
   { name: 'Mumbai', lat: 19.076, lon: 72.8777 },
@@ -153,6 +154,11 @@ export const INDIAN_CITIES = [
   { name: 'Jaipur', lat: 26.9124, lon: 75.7873 },
   { name: 'Lucknow', lat: 26.8467, lon: 80.9462 },
 ];
+=======
+/** Indian cities fallback when forward geocode fails. Sorted by name; Mumbai first for default. */
+import { INDIAN_CITIES_WITH_COORDS } from '../data/indianCitiesWithCoords';
+export const INDIAN_CITIES = INDIAN_CITIES_WITH_COORDS;
+>>>>>>> main
 
 function buildAlerts(weatherUnion, openMeteo, airQuality) {
   const alerts = [];

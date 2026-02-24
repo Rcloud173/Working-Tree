@@ -1,8 +1,21 @@
 const Joi = require('joi');
 
+<<<<<<< HEAD
 const askSchema = Joi.object({
   question: Joi.string().min(10).max(1000).required(),
   model: Joi.string().valid('llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768').optional(),
+=======
+const MAX_MESSAGE_LENGTH = 500;
+
+const askSchema = Joi.object({
+  question: Joi.string().min(10).max(MAX_MESSAGE_LENGTH).required(),
+  model: Joi.string().optional(),
+});
+
+const chatSchema = Joi.object({
+  message: Joi.string().min(10).max(MAX_MESSAGE_LENGTH).required(),
+  model: Joi.string().optional(),
+>>>>>>> main
 });
 
 const validate = (schema) => (req, res, next) => {
@@ -26,5 +39,9 @@ const validate = (schema) => (req, res, next) => {
 
 module.exports = {
   askSchema,
+<<<<<<< HEAD
+=======
+  chatSchema,
+>>>>>>> main
   validate,
 };

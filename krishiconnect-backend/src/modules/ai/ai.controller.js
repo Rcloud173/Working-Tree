@@ -11,14 +11,51 @@ const ask = asyncHandler(async (req, res) => {
   const userId = (user._id || user.id).toString();
   const question = req.body?.question;
   const model = req.body?.model || null;
+<<<<<<< HEAD
   if (question == null || typeof question !== 'string') {
     throw new ApiError(400, 'Question is required.');
   }
   const data = await aiService.ask(userId, question, model);
+=======
+  const responseLanguage = user.preferences?.language || 'en';
+  if (question == null || typeof question !== 'string') {
+    throw new ApiError(400, 'Question is required.');
+  }
+  const data = await aiService.ask(userId, question, model, responseLanguage);
+>>>>>>> main
   res.status(200).json(new ApiResponse(200, data, 'OK'));
 });
 
 /**
+<<<<<<< HEAD
+=======
+ * POST /ai/chat — non-streaming chat. Body: { message }. Returns { success, response, timestamp }.
+ * Same domain restriction and validation as /ask; does not call Groq for non-agriculture input.
+ */
+const chat = asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(401, 'Authentication required');
+  }
+  const userId = (user._id || user.id).toString();
+  const message = req.body?.message;
+  const model = req.body?.model || null;
+  const responseLanguage = user.preferences?.language || 'en';
+  if (message == null || typeof message !== 'string') {
+    throw new ApiError(400, 'Message is required.');
+  }
+  const data = await aiService.ask(userId, message, model, responseLanguage);
+  res.status(200).json(
+    new ApiResponse(200, {
+      success: true,
+      response: data.answer,
+      timestamp: new Date().toISOString(),
+    }, 'OK')
+  );
+});
+
+/**
+>>>>>>> main
  * Streaming response: SSE. Sets headers and streams chunks as data: { "content": "..." }\n\n
  */
 const askStream = asyncHandler(async (req, res) => {
@@ -29,6 +66,10 @@ const askStream = asyncHandler(async (req, res) => {
   const userId = (user._id || user.id).toString();
   const question = req.body?.question;
   const model = req.body?.model || null;
+<<<<<<< HEAD
+=======
+  const responseLanguage = user.preferences?.language || 'en';
+>>>>>>> main
   if (question == null || typeof question !== 'string') {
     throw new ApiError(400, 'Question is required.');
   }
@@ -46,7 +87,11 @@ const askStream = asyncHandler(async (req, res) => {
   };
 
   try {
+<<<<<<< HEAD
     await aiService.askStream(userId, question, writeChunk, model);
+=======
+    await aiService.askStream(userId, question, writeChunk, model, responseLanguage);
+>>>>>>> main
     res.write('data: [DONE]\n\n');
   } catch (err) {
     const status = err.statusCode || err.status || 500;
@@ -61,4 +106,8 @@ const askStream = asyncHandler(async (req, res) => {
 module.exports = {
   ask,
   askStream,
+<<<<<<< HEAD
+=======
+  chat,
+>>>>>>> main
 };

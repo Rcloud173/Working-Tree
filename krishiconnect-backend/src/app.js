@@ -22,6 +22,10 @@ const weatherRoutes = require('./modules/weather/weather.routes');
 const translateRoutes = require('./modules/translate/translate.routes');
 const settingsRoutes = require('./modules/settings/settings.routes');
 const aiRoutes = require('./modules/ai/ai.routes');
+<<<<<<< HEAD
+=======
+const searchRoutes = require('./modules/search/search.routes');
+>>>>>>> main
 
 const app = express();
 
@@ -65,6 +69,10 @@ app.use('/api/v1/weather', weatherRoutes);
 app.use('/api/v1/translate', translateRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/ai', aiRoutes);
+<<<<<<< HEAD
+=======
+app.use('/api/v1/search', searchRoutes);
+>>>>>>> main
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
