@@ -36,9 +36,20 @@ export default function HourlyForecast({ hourly, currentTime }) {
   if (!next24.length) return null;
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ fontSize: 14, fontWeight: 700, color: '#94a3b8', marginBottom: 12 }}>⏰ Hourly (24h)</h3>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          paddingBottom: 8,
+          width: '100%',
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {next24.map((hour, i) => {
           const isCurrent = i === 0 && hour.time?.startsWith(nowHour.slice(0, 13));
           const timeStr = hour.time ? new Date(hour.time).toLocaleTimeString('en-IN', { hour: 'numeric' }) : '—';

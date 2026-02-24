@@ -130,48 +130,77 @@ export default function WeatherPage() {
   return (
     <div style={DASHBOARD_STYLE}>
       <style>{`
-        .weather-grid {
-          display: grid;
+        .weather-two-col {
+          display: flex;
           gap: 16px;
-          align-items: start;
+          align-items: flex-start;
+          width: 100%;
+          min-height: 0;
+        }
+        .weather-left {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .weather-hero-wrap {
+          width: 100%;
+          min-width: 0;
+        }
+        .weather-hourly-wrap {
+          width: 100%;
+          min-width: 0;
+        }
+        .weather-hourly-wrap > * {
+          width: 100%;
+          min-width: 0;
+        }
+        .weather-sun-aqi-uv {
+          display: grid;
           grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        @media (min-width: 640px) {
+          .weather-sun-aqi-uv {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        .weather-daily-wrap {
+          width: 100%;
+        }
+        .weather-rain-map {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
         }
         @media (min-width: 768px) {
-          .weather-grid {
+          .weather-rain-map {
             grid-template-columns: 1fr 1fr;
           }
-          .weather-hero { grid-column: 1; }
-          .weather-stats { grid-column: 2; }
-          .weather-hourly { grid-column: 1 / -1; }
-          .weather-sun-aqi-uv {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-          }
-          .weather-daily { grid-column: 1 / -1; }
-          .weather-rain { grid-column: 1; }
-          .weather-map { grid-column: 2; }
+        }
+        .weather-stats-panel {
+          width: 280px;
+          flex-shrink: 0;
+          display: none;
+          flex-direction: column;
+          gap: 10px;
+          max-height: calc(100vh - 180px);
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-right: 4px;
         }
         @media (min-width: 1024px) {
-          .weather-grid {
-            grid-template-columns: 1fr 280px;
-            grid-template-rows: auto auto auto auto auto auto;
-            gap: 16px;
+          .weather-stats-panel {
+            display: flex;
           }
-          .weather-hero { grid-column: 1; grid-row: 1; }
-          .weather-stats { grid-column: 2; grid-row: 1 / 3; }
-          .weather-hourly { grid-column: 1 / -1; grid-row: 2; }
-          .weather-sun-aqi-uv {
-            grid-column: 1 / -1;
-            grid-row: 3;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+          .weather-stats-mobile {
+            display: none;
           }
-          .weather-daily { grid-column: 1 / -1; grid-row: 4; }
-          .weather-rain { grid-column: 1; grid-row: 5; }
-          .weather-map { grid-column: 2; grid-row: 5; }
+        }
+        .weather-stats-mobile {
+          display: block;
+          width: 100%;
         }
       `}</style>
 
@@ -266,29 +295,32 @@ export default function WeatherPage() {
               Loading weather…
             </div>
           ) : (
-            <div className="weather-grid">
-              <div className="weather-hero">
-                <HeroCard currentWeather={currentWeather} locationName={locationName} liveTime={liveTime} />
+            <div className="weather-two-col">
+              <div className="weather-left">
+                <div className="weather-hero-wrap">
+                  <HeroCard currentWeather={currentWeather} locationName={locationName} liveTime={liveTime} />
+                </div>
+                <div className="weather-hourly-wrap">
+                  <HourlyForecast hourly={hourly} currentTime={liveTime?.toISOString?.() ?? new Date().toISOString()} />
+                </div>
+                <div className="weather-sun-aqi-uv">
+                  <SunriseSunset forecast={forecast} />
+                  <AQICard airQuality={airQuality} />
+                  <UVCard uvIndex={currentWeather?.uvIndex} />
+                </div>
+                <div className="weather-daily-wrap">
+                  <DailyForecast forecast={forecast} />
+                </div>
+                <div className="weather-rain-map">
+                  <RainRadar hourly={hourly} weatherUnion={weatherUnion} currentTime={liveTime} />
+                  <WeatherMap lat={coords.lat} lon={coords.lon} locationName={locationName} condition={currentWeather?.condition} temperature={currentWeather?.temperature} />
+                </div>
+                <div className="weather-stats-mobile">
+                  <StatsGrid currentWeather={currentWeather} weatherUnion={weatherUnion} />
+                </div>
               </div>
-              <div className="weather-stats">
+              <div className="weather-stats-panel">
                 <StatsGrid currentWeather={currentWeather} weatherUnion={weatherUnion} />
-              </div>
-              <div className="weather-hourly" style={{ gridColumn: '1 / -1' }}>
-                <HourlyForecast hourly={hourly} currentTime={liveTime?.toISOString?.() ?? new Date().toISOString()} />
-              </div>
-              <div className="weather-sun-aqi-uv">
-                <SunriseSunset forecast={forecast} />
-                <AQICard airQuality={airQuality} />
-                <UVCard uvIndex={currentWeather?.uvIndex} />
-              </div>
-              <div className="weather-daily" style={{ gridColumn: '1 / -1' }}>
-                <DailyForecast forecast={forecast} />
-              </div>
-              <div className="weather-rain">
-                <RainRadar hourly={hourly} weatherUnion={weatherUnion} currentTime={liveTime} />
-              </div>
-              <div className="weather-map">
-                <WeatherMap lat={coords.lat} lon={coords.lon} locationName={locationName} condition={currentWeather?.condition} temperature={currentWeather?.temperature} />
               </div>
             </div>
           )}

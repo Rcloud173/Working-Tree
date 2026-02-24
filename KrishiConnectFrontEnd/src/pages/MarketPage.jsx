@@ -5,38 +5,21 @@ import {
   Plus, Minus, CheckCircle, AlertCircle, Eye, SlidersHorizontal,
   Leaf, ShoppingCart, MapPin, Clock, Bookmark, Bell
 } from 'lucide-react';
+import { useMarketPrices } from '../hooks/useMarketPrices';
+import { ProductList, MarketLoader, ErrorState, EmptyState } from '../components/market';
 
-// ============================================================================
-// ✅ API PLACEHOLDER FUNCTIONS
-// Replace these with actual API calls to your backend
-// ============================================================================
-const API_BASE = 'http://localhost:5000/api';
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
+// Legacy demo API for gainers/losers/news/trends (can be replaced with real endpoints later)
 const marketApi = {
-  // TODO: GET ${API_BASE}/market/prices?crop=${crop}&state=${state}&type=${type}
-  // Returns: { prices: CommodityPrice[] }
-  fetchMarketPrices: async (filters = {}) => {
-    await delay(800);
-    return { prices: generateDemoPrices(filters) };
-  },
-
-  // TODO: GET ${API_BASE}/market/trends?crop=${crop}
-  // Returns: { trends: TrendPoint[] }
   fetchCropTrends: async (crop) => {
     await delay(600);
     return { trends: generateTrendData(crop) };
   },
-
-  // TODO: GET ${API_BASE}/market/news
-  // Returns: { news: NewsItem[] }
   fetchMarketNews: async () => {
     await delay(500);
     return { news: DEMO_NEWS };
   },
-
-  // TODO: GET ${API_BASE}/market/gainers-losers
-  // Returns: { gainers: CommodityPrice[], losers: CommodityPrice[] }
   fetchGainersLosers: async () => {
     await delay(400);
     return { gainers: DEMO_GAINERS, losers: DEMO_LOSERS };
@@ -253,7 +236,27 @@ const GainerLoserCard = ({ item, type }) => {
 // MAIN MARKET PAGE
 // ============================================================================
 const MarketPage = () => {
-  const [prices, setPrices] = useState([]);
+  // Live product listing from API (marketApiService + useMarketPrices)
+  const {
+    products,
+    pagination,
+    categories,
+    states,
+    loading: productsLoading,
+    error: productsError,
+    searchQuery,
+    setSearchQuery,
+    category,
+    setCategory,
+    stateFilter,
+    setStateFilter,
+    sort,
+    setSort,
+    page,
+    setPage,
+    refetch: refetchProducts,
+  } = useMarketPrices({ pageSize: 20 });
+
   const [news, setNews] = useState([]);
   const [gainers, setGainers] = useState([]);
   const [losers, setLosers] = useState([]);
@@ -262,10 +265,6 @@ const MarketPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCrop, setSelectedCrop] = useState('All');
-  const [selectedState, setSelectedState] = useState('All');
   const [selectedMarketType, setSelectedMarketType] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -294,13 +293,10 @@ const MarketPage = () => {
     isRefresh ? setRefreshing(true) : setLoading(true);
     setError(null);
     try {
-      const filters = { crop: selectedCrop, state: selectedState, type: selectedMarketType };
-      const [priceData, newsData, glData] = await Promise.all([
-        marketApi.fetchMarketPrices(filters),
+      const [newsData, glData] = await Promise.all([
         marketApi.fetchMarketNews(),
         marketApi.fetchGainersLosers(),
       ]);
-      setPrices(priceData.prices);
       setNews(newsData.news);
       setGainers(glData.gainers);
       setLosers(glData.losers);
@@ -311,11 +307,11 @@ const MarketPage = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedCrop, selectedState, selectedMarketType]);
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, [selectedCrop, selectedState, selectedMarketType]);
+  }, [loadData]);
 
   const loadTrend = useCallback(async (crop) => {
     try {
@@ -349,28 +345,20 @@ const MarketPage = () => {
     }
   };
 
-  const filteredPrices = prices.filter(p => {
-    const q = searchQuery.toLowerCase();
-    return (!q || p.crop.toLowerCase().includes(q) || p.market.toLowerCase().includes(q) || p.state.toLowerCase().includes(q));
-  });
+  const comparePrices = products.filter((p) => compareList.includes(p.id));
+  const watchlistPrices = products.filter((p) => watchlist.includes(p.name));
 
-  const comparePrices = prices.filter(p => compareList.includes(p.id));
-  const watchlistPrices = prices.filter(p => watchlist.includes(p.crop));
-
-  const applyFilters = () => {
-    setShowFilters(false);
-    loadData();
-  };
+  const applyFilters = () => setShowFilters(false);
 
   const clearFilters = () => {
-    setSelectedCrop('All');
-    setSelectedState('All');
+    setCategory('');
+    setStateFilter('');
     setSelectedMarketType('All');
     setSearchQuery('');
     setShowFilters(false);
   };
 
-  const activeFilterCount = [selectedCrop, selectedState, selectedMarketType].filter(v => v !== 'All').length;
+  const activeFilterCount = [category, stateFilter].filter(Boolean).length;
 
   // Trend chart renderer
   const renderTrendChart = () => {
@@ -482,23 +470,30 @@ const MarketPage = () => {
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
                 <thead>
                   <tr>
-                    {['Crop', 'Market', 'Min Price', 'Max Price', 'Avg Price', 'Trend', 'Volume'].map(h => (
+                    {['Product', 'Market', 'Min Price', 'Max Price', 'Price', 'Trend'].map((h) => (
                       <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {comparePrices.map(p => (
+                  {comparePrices.map((p) => (
                     <tr key={p.id} style={{ background: '#f9fafb' }}>
                       <td style={{ padding: '0.75rem', borderRadius: '0.5rem 0 0 0.5rem', fontWeight: '700', color: '#111827', fontSize: '0.875rem' }}>
-                        {CROP_EMOJIS[p.crop]} {p.crop}
+                        {CROP_EMOJIS[p.name]} {p.name}
                       </td>
-                      <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#4b5563' }}>{p.market}</td>
-                      <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: '0.875rem', color: '#111827' }}>₹{p.minPrice.toLocaleString('en-IN')}</td>
-                      <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: '0.875rem', color: '#111827' }}>₹{p.maxPrice.toLocaleString('en-IN')}</td>
-                      <td style={{ padding: '0.75rem', fontWeight: '800', fontSize: '0.95rem', color: '#065f46' }}>₹{p.avgPrice.toLocaleString('en-IN')}</td>
-                      <td style={{ padding: '0.75rem' }}><TrendBadge change={p.change} /></td>
-                      <td style={{ padding: '0.75rem', borderRadius: '0 0.5rem 0.5rem 0', fontSize: '0.8rem', color: '#6b7280' }}>{p.volume}</td>
+                      <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#4b5563' }}>{p.market ?? '—'}</td>
+                      <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: '0.875rem', color: '#111827' }}>
+                        ₹{(p.minPrice ?? p.currentPrice ?? 0).toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ padding: '0.75rem', fontWeight: '600', fontSize: '0.875rem', color: '#111827' }}>
+                        ₹{(p.maxPrice ?? p.currentPrice ?? 0).toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ padding: '0.75rem', fontWeight: '800', fontSize: '0.95rem', color: '#065f46' }}>
+                        ₹{(p.currentPrice ?? 0).toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ padding: '0.75rem', borderRadius: '0 0.5rem 0.5rem 0' }}>
+                        <TrendBadge change={p.priceChange ?? 0} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -519,12 +514,12 @@ const MarketPage = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Live mandi prices, trends & news</p>
             </div>
             <button
-              onClick={() => loadData(true)}
-              disabled={refreshing || loading}
+              onClick={() => { loadData(true); refetchProducts(); }}
+              disabled={refreshing || loading || productsLoading}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-70 transition shadow-sm"
             >
-              <RefreshCw size={16} className={refreshing || loading ? 'animate-spin' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
+              <RefreshCw size={16} className={refreshing || loading || productsLoading ? 'animate-spin' : ''} />
+              {refreshing || productsLoading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
 
@@ -561,22 +556,44 @@ const MarketPage = () => {
           {/* Filter dropdowns (in header when expanded) */}
           {showFilters && (
             <div className="mt-3 flex flex-wrap gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-              {[
-                { label: 'Crop', value: selectedCrop, setter: setSelectedCrop, options: ['All', ...ALL_CROPS] },
-                { label: 'State', value: selectedState, setter: setSelectedState, options: ['All', ...ALL_STATES] },
-                { label: 'Market Type', value: selectedMarketType, setter: setSelectedMarketType, options: ['All', ...MARKET_TYPES] },
-              ].map(({ label, value, setter, options }) => (
-                <div key={label} className="flex-1 min-w-[140px]">
-                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">{label}</label>
-                  <select
-                    value={value}
-                    onChange={e => setter(e.target.value)}
-                    className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600"
-                  >
-                    {options.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-              ))}
+              <div className="flex-1 min-w-[140px]">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600"
+                >
+                  <option value="">All</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">State</label>
+                <select
+                  value={stateFilter}
+                  onChange={(e) => setStateFilter(e.target.value)}
+                  className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600"
+                >
+                  <option value="">All</option>
+                  {states.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Sort</label>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-200 dark:focus:ring-green-600"
+                >
+                  <option value="recent">Recently updated</option>
+                  <option value="price_asc">Price (low to high)</option>
+                  <option value="price_desc">Price (high to low)</option>
+                </select>
+              </div>
               <div className="flex items-end">
                 <button onClick={applyFilters} className="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition">
                   Apply
@@ -633,7 +650,7 @@ const MarketPage = () => {
           ))}
         </div>
 
-        {/* Error */}
+        {/* Error (legacy gainers/news) */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-2xl p-6 text-center mb-6">
             <AlertCircle size={28} className="text-red-500 mx-auto mb-2" />
@@ -644,115 +661,83 @@ const MarketPage = () => {
           </div>
         )}
 
-        {/* Price Table Tab */}
+        {/* Price / Product Listing Tab — live API */}
         {activeTab === 'prices' && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200">
             <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
               <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
-                Commodity Price Board
+                Product prices
               </h3>
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                {filteredPrices.length} records · Click ⊕ to compare (max 3)
+                {products.length > 0 && pagination.totalCount != null
+                  ? `${pagination.totalCount} record${pagination.totalCount !== 1 ? 's' : ''}`
+                  : 'Live from API'}
               </span>
             </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              {loading ? (
-                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {[...Array(8)].map((_, i) => <SkeletonBlock key={i} h="48px" rounded="0.5rem" />)}
-                </div>
-              ) : filteredPrices.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
-                  <ShoppingCart size={36} style={{ margin: '0 auto 0.75rem', color: '#d1d5db' }} />
-                  <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>No results found</p>
-                  <p style={{ fontSize: '0.8rem' }}>Try adjusting your search or filters</p>
-                </div>
+            <div className="p-5">
+              {productsError ? (
+                <ErrorState message={productsError} onRetry={refetchProducts} />
+              ) : productsLoading && products.length === 0 ? (
+                <MarketLoader count={8} />
+              ) : products.length === 0 ? (
+                <EmptyState
+                  title="No products found"
+                  subtitle="Try adjusting your search or filters, or ensure the backend has market data."
+                />
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f9fafb' }}>
-                      {['', 'Crop', 'Market', 'State', 'Min Price', 'Avg Price', 'Max Price', 'Change', 'Volume', 'Updated', 'Watch'].map(h => (
-                        <th key={h} style={{
-                          padding: '0.65rem 0.875rem', textAlign: 'left',
-                          fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em',
-                          color: '#6b7280', fontWeight: '700', whiteSpace: 'nowrap',
-                        }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPrices.map((p, i) => {
-                      const isSelected = compareList.includes(p.id);
-                      return (
-                        <tr key={p.id} style={{
-                          borderTop: '1px solid #f3f4f6',
-                          background: isSelected ? '#f0fdf4' : (i % 2 === 0 ? '#fff' : '#fafafa'),
-                          transition: 'background 0.15s',
-                        }}
-                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f9fafb'; }}
-                          onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa'; }}
+                <>
+                  <ProductList
+                    products={products}
+                    renderExtra={(p) => (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => toggleCompare(p.id)}
+                          title={compareList.includes(p.id) ? 'Remove from compare' : 'Add to compare (max 3)'}
+                          className={`p-1 rounded-lg transition ${compareList.includes(p.id) ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400'}`}
                         >
-                          {/* Compare checkbox */}
-                          <td style={{ padding: '0.65rem 0.5rem 0.65rem 1rem' }}>
-                            <button
-                              onClick={() => toggleCompare(p.id)}
-                              title="Add to compare"
-                              style={{
-                                width: '22px', height: '22px', borderRadius: '0.35rem',
-                                border: `2px solid ${isSelected ? '#10b981' : '#d1d5db'}`,
-                                background: isSelected ? '#10b981' : '#fff',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                transition: 'all 0.2s',
-                              }}
-                            >
-                              {isSelected && <CheckCircle size={12} style={{ color: '#fff' }} />}
-                            </button>
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontWeight: '700', fontSize: '0.875rem', color: '#111827', whiteSpace: 'nowrap' }}>
-                            {CROP_EMOJIS[p.crop] || '🌱'} {p.crop}
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontSize: '0.8rem', color: '#374151', whiteSpace: 'nowrap' }}>
-                            <div>{p.market}</div>
-                            <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>{p.marketType}</div>
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontSize: '0.8rem', color: '#6b7280', whiteSpace: 'nowrap' }}>{p.state}</td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontSize: '0.82rem', color: '#374151', whiteSpace: 'nowrap' }}>
-                            ₹{p.minPrice.toLocaleString('en-IN')}
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontWeight: '800', fontSize: '0.95rem', color: '#065f46', whiteSpace: 'nowrap' }}>
-                            ₹{p.avgPrice.toLocaleString('en-IN')}
-                            <div style={{ fontSize: '0.65rem', color: '#9ca3af', fontWeight: '400' }}>/quintal</div>
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontSize: '0.82rem', color: '#374151', whiteSpace: 'nowrap' }}>
-                            ₹{p.maxPrice.toLocaleString('en-IN')}
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem' }}>
-                            <TrendBadge change={p.change} />
-                          </td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontSize: '0.78rem', color: '#6b7280', whiteSpace: 'nowrap' }}>{p.volume}</td>
-                          <td style={{ padding: '0.65rem 0.875rem', fontSize: '0.72rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>
-                            {new Date(p.lastUpdated).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                          </td>
-                          <td style={{ padding: '0.65rem 1rem 0.65rem 0.5rem' }}>
-                            <button
-                              onClick={() => toggleWatchlist(p.crop)}
-                              style={{
-                                background: 'none', border: 'none', cursor: 'pointer',
-                                padding: '0.25rem',
-                              }}
-                            >
-                              <Star size={15} style={{
-                                color: watchlist.includes(p.crop) ? '#f59e0b' : '#d1d5db',
-                                fill: watchlist.includes(p.crop) ? '#f59e0b' : 'none',
-                                transition: 'all 0.2s',
-                              }} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          <CheckCircle size={16} fill={compareList.includes(p.id) ? 'currentColor' : 'none'} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleWatchlist(p.name)}
+                          className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                          aria-label={watchlist.includes(p.name) ? 'Remove from watchlist' : 'Add to watchlist'}
+                        >
+                          <Star
+                            size={16}
+                            className={watchlist.includes(p.name) ? 'text-amber-500' : 'text-gray-400'}
+                            fill={watchlist.includes(p.name) ? 'currentColor' : 'none'}
+                          />
+                        </button>
+                      </div>
+                    )}
+                  />
+                  {(pagination.totalCount > pagination.limit || pagination.hasNextPage) && (
+                    <div className="mt-6 flex items-center justify-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1 || productsLoading}
+                        className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 px-2">
+                        Page {page}
+                        {pagination.totalCount != null ? ` of ${Math.ceil(pagination.totalCount / pagination.limit) || 1}` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => p + 1)}
+                        disabled={!pagination.hasNextPage || productsLoading}
+                        className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -927,7 +912,7 @@ const MarketPage = () => {
                     <p style={{ fontSize: '0.82rem', color: '#6b7280', textAlign: 'center' }}>No price data for watchlist crops with current filters.</p>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
-                      {watchlistPrices.map(p => (
+                      {watchlistPrices.map((p) => (
                         <div key={p.id} style={{
                           padding: '1rem', border: '1.5px solid #e5e7eb', borderRadius: '1rem',
                           background: '#fff', transition: 'all 0.2s',
@@ -936,20 +921,20 @@ const MarketPage = () => {
                           onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.625rem' }}>
-                            <span style={{ fontSize: '1.25rem' }}>{CROP_EMOJIS[p.crop]}</span>
-                            <TrendBadge change={p.change} />
+                            <span style={{ fontSize: '1.25rem' }}>{CROP_EMOJIS[p.name]}</span>
+                            <TrendBadge change={p.priceChange ?? 0} />
                           </div>
-                          <h4 style={{ fontWeight: '800', fontSize: '0.9rem', color: '#111827', marginBottom: '0.2rem' }}>{p.crop}</h4>
-                          <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.625rem' }}>{p.market}</p>
+                          <h4 style={{ fontWeight: '800', fontSize: '0.9rem', color: '#111827', marginBottom: '0.2rem' }}>{p.name}</h4>
+                          <p style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.625rem' }}>{p.market ?? '—'}</p>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div>
-                              <p style={{ fontSize: '0.65rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Avg Price</p>
-                              <p style={{ fontWeight: '800', fontSize: '1.05rem', color: '#065f46' }}>₹{p.avgPrice.toLocaleString('en-IN')}</p>
+                              <p style={{ fontSize: '0.65rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Price</p>
+                              <p style={{ fontWeight: '800', fontSize: '1.05rem', color: '#065f46' }}>₹{(p.currentPrice ?? 0).toLocaleString('en-IN')}</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <p style={{ fontSize: '0.65rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Range</p>
                               <p style={{ fontSize: '0.75rem', color: '#374151', fontWeight: '600' }}>
-                                {p.minPrice.toLocaleString('en-IN')}–{p.maxPrice.toLocaleString('en-IN')}
+                                {(p.minPrice ?? 0).toLocaleString('en-IN')}–{(p.maxPrice ?? 0).toLocaleString('en-IN')}
                               </p>
                             </div>
                           </div>
